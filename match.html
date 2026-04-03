@@ -955,14 +955,36 @@
       filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
     }
     @media (max-width: 900px) {
+      /* Stack energy panel under the bead field — avoids overlay overlap on narrow viewports */
+      .result-section {
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        min-height: 320px;
+      }
+      .result-section .section-title {
+        flex-shrink: 0;
+      }
+      .result-section > #beadContainer {
+        flex-shrink: 0;
+        width: 100%;
+      }
       .radar-module.energy-panel {
-        width: min(240px, calc(100% - 32px));
-        bottom: 14px;
-        left: 14px;
-        max-width: calc(100% - 28px);
+        position: relative;
+        left: auto;
+        bottom: auto;
+        width: 100%;
+        max-width: none;
+        margin-top: 1rem;
+        margin-bottom: 0.25rem;
+        flex-shrink: 0;
+        align-self: stretch;
       }
       #radarSvg #radarDataLayer {
-        transform: scale(1.28);
+        transform: scale(1.12);
       }
     }
     .radar-module .radar-bg circle {
