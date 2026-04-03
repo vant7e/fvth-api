@@ -1,5 +1,8 @@
 Deploy bundle: FastAPI api.py + engine.py + beads_master.csv + beads/ + Procfile + requirements.txt
 
+GLB files (>100MB) use Git LFS — install: brew install git-lfs && git lfs install
+If push was rejected for file size: git reset --mixed HEAD~1, then git add again (see LFS steps below).
+
 1) Create an empty GitHub repo (no README). Copy its HTTPS URL.
 
 2) In this directory:
@@ -20,3 +23,13 @@ Deploy bundle: FastAPI api.py + engine.py + beads_master.csv + beads/ + Procfile
    git rm -r --cached fvth/bazi
    echo 'fvth/bazi/' >> .gitignore
    git add .gitignore && git commit -m "Track fvth/bazi only in its own GitHub repo"
+
+6) GitHub 100MB limit + models/*.glb:
+   .gitattributes tracks *.glb with Git LFS. After git lfs install:
+   git reset --mixed HEAD~1
+   git add .gitattributes nixpacks.toml
+   git add models/ bg/ logo/ .railwayignore
+   git add -A
+   git commit -m "Use Git LFS for GLB models"
+   git push origin main
+   (Use git config http.postBuffer 524288000 if push is slow/large.)

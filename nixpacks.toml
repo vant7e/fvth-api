@@ -1,0 +1,10 @@
+# Ensure Git LFS pulls GLBs after clone (GitHub stores pointers in git; real files are on LFS).
+[phases.setup]
+aptPkgs = ["git-lfs"]
+
+[phases.install]
+cmds = [
+  "git lfs install",
+  "git lfs pull",
+  "pip install -r requirements.txt",
+]

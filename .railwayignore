@@ -7,12 +7,7 @@ __pycache__
 node_modules
 .DS_Store
 
-# Frontend / static UX (FastAPI does not serve these from this root)
-match.html
-bead_3d_runtime.js
-match_bead_field_engine.js
-bg/
-logo/
+# match.html + *.js + bg/ + logo/ + models/ are served by api.py — do NOT ignore them.
 
-# Product reference CSV only (engine reads beads_master.csv, not this file)
+# Optional reference only (not used by engine or /match UI)
 bead chart.csv
