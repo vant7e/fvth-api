@@ -1029,6 +1029,23 @@
       color: var(--text-muted);
       text-align: center;
     }
+    .deploy-export-dl-note {
+      max-width: 420px;
+      margin: 0.65rem auto 0;
+      font-size: 0.68rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .deploy-export-dl-link {
+      color: #cfd6dc;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      letter-spacing: 0.05em;
+    }
+    .deploy-export-dl-link:active {
+      color: #fff;
+    }
     .deploy-export-error .deploy-export-err-title {
       font-size: 0.85rem;
       letter-spacing: 0.12em;
@@ -1518,7 +1535,11 @@
             <button type="button" class="btn-deploy-export" id="deployExportBtnSave">SAVE YOUR STRUCTURE</button>
             <button type="button" class="btn-deploy-export" id="deployExportBtnShare">SHARE YOUR STRUCTURE</button>
           </div>
-          <p class="deploy-export-hint">9:16 looping video. Share opens the system sheet on supported phones. SAVE YOUR STRUCTURE opens the FVTH consultation page.</p>
+          <p class="deploy-export-hint">SAVE YOUR STRUCTURE → FVTH consult. SHARE opens the system sheet — on iPhone tap <strong>Save Video</strong> or <strong>Save to Photos</strong> (English labels; MP4 when your browser supports it).</p>
+          <p class="deploy-export-dl-note" id="deployExportDlNote">
+            <a href="#" id="deployExportDlLink" class="deploy-export-dl-link" download="fvth-structure.webm">Download video file</a>
+            <span id="deployExportDlHint"> — tap if share did not save (Safari may need a direct tap).</span>
+          </p>
         </div>
         <div id="deployExportError" class="deploy-export-error" style="display: none;"></div>
       </div>
@@ -2581,7 +2602,10 @@
   }
 
   function pickDeployVideoMime() {
+    /* Prefer MP4 when available — iOS Photos (Save Video / Save to Photos) handles MP4 reliably; WebM often does not. */
     var candidates = [
+      'video/mp4;codecs=avc1.42E01E',
+      'video/mp4',
       'video/webm;codecs=vp9',
       'video/webm;codecs=vp8',
       'video/webm'
@@ -2910,18 +2934,38 @@
       '</p>';
   }
 
+  /** Programmatic anchor download is unreliable on iOS Safari; a visible link works better. */
   function deployExportDownloadFallback() {
-    if (!deployExportState.objectUrl) return;
+    var url = deployExportState.objectUrl;
+    var name = deployExportState.fileName || 'fvth-structure.webm';
+    if (!url) return;
     var a = document.createElement('a');
-    a.href = deployExportState.objectUrl;
-    a.download = deployExportState.fileName;
+    a.href = url;
+    a.setAttribute('download', name);
+    a.rel = 'noopener';
+    document.body.appendChild(a);
     a.click();
+    setTimeout(function() {
+      try {
+        document.body.removeChild(a);
+      } catch (e) {}
+    }, 600);
+    var dl = document.getElementById('deployExportDlLink');
+    if (dl) {
+      dl.href = url;
+      dl.setAttribute('download', name);
+      try {
+        dl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } catch (e) {}
+    }
   }
 
   function showDeployExportResult(blob, shareCode, mime) {
-    var baseName = String(shareCode || 'FVTH').replace(/[^\w-]+/g, '') + '-structure.webm';
+    var m = mime || 'video/webm';
+    var ext = m.indexOf('mp4') !== -1 ? '.mp4' : '.webm';
+    var baseName = String(shareCode || 'FVTH').replace(/[^\w-]+/g, '') + '-structure' + ext;
     deployExportState.blob = blob;
-    deployExportState.mime = mime || 'video/webm';
+    deployExportState.mime = m;
     deployExportState.fileName = baseName;
     if (deployExportState.objectUrl) {
       try {
@@ -2929,6 +2973,13 @@
       } catch (e) {}
     }
     deployExportState.objectUrl = URL.createObjectURL(blob);
+
+    var dl = document.getElementById('deployExportDlLink');
+    if (dl) {
+      dl.href = deployExportState.objectUrl;
+      dl.setAttribute('download', deployExportState.fileName);
+      dl.textContent = ext === '.mp4' ? 'Download .mp4 file' : 'Download .webm file';
+    }
 
     document.getElementById('deployExportLoading').style.display = 'none';
     document.getElementById('deployExportError').style.display = 'none';
@@ -2955,16 +3006,28 @@
         return;
       }
       var f = new File([L], deployExportState.fileName, { type: L.type || deployExportState.mime });
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [f] })) {
+      var canFiles =
+        navigator.share &&
+        navigator.canShare &&
+        (function() {
+          try {
+            return navigator.canShare({ files: [f] });
+          } catch (e) {
+            return false;
+          }
+        })();
+      if (canFiles) {
         navigator
-          .share({ files: [f], title: 'FVTH structure', text: 'My FVTH configuration' })
-          .catch(function() {
+          .share({
+            files: [f],
+            title: 'FVTH structure',
+            text: 'In the share sheet, tap Save Video or Save to Photos · FVTH configuration'
+          })
+          .catch(function(err) {
             deployExportDownloadFallback();
-            alert('Saved a copy — upload from your gallery to Instagram Stories or Reels.');
           });
       } else {
         deployExportDownloadFallback();
-        alert('Video saved. Open Instagram (or another app) and upload this file from your photos or files.');
       }
     };
   }
