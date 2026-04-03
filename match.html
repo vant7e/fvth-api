@@ -2705,14 +2705,14 @@
       '<button type="button" id="fvthBtnSave">SAVE YOUR STRUCTURE</button>',
       '<button type="button" id="fvthBtnShare">SHARE YOUR STRUCTURE</button>',
       '</div>',
-      '<p class="hint">9:16 looping video (1080×1920). Save or Share — on supported phones Share opens the system sheet (Instagram, etc.). Otherwise save and upload from your gallery to Stories or Reels.</p>',
+      '<p class="hint">9:16 looping video. Share opens the system sheet on supported phones. SAVE YOUR STRUCTURE opens the FVTH consultation page to continue with your build.</p>',
       '<script>',
-      '(function(){var L=null;var U=null;var FN=', JSON.stringify(baseName), ';var MT=', JSON.stringify(mime || 'video/webm'), ';',
+      '(function(){var L=null;var U=null;var FN=', JSON.stringify(baseName), ';var MT=', JSON.stringify(mime || 'video/webm'), ';var CU=', JSON.stringify('https://www.fvthdesign.com/consult'), ';',
       'window.addEventListener("message",function(ev){if(ev.source!==window.opener||!ev.data||ev.data.type!=="FVTH_DEPLOY")return;',
       'try{L=new Blob([ev.data.buffer],{type:ev.data.mime||MT});U=URL.createObjectURL(L);',
       'var v=document.getElementById("fvthDeployVideo");v.src=U;v.muted=true;v.play().catch(function(){});}catch(e){}});',
       'function dl(){if(!U)return;var a=document.createElement("a");a.href=U;a.download=FN;a.click();}',
-      'document.getElementById("fvthBtnSave").onclick=function(){dl();};',
+      'document.getElementById("fvthBtnSave").onclick=function(){window.location.href=CU;};',
       'document.getElementById("fvthBtnShare").onclick=function(){',
       'if(!L){alert("Wait for the video to finish loading.");return;}',
       'var f=new File([L],FN,{type:L.type||MT});',
@@ -2754,9 +2754,17 @@
     }
 
     var shareCode = state.deployShareCode || generateShareCode();
-    var W = 1080;
-    var H = 1920;
-    var inset = 46;
+    var narrow =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(max-width: 900px)').matches;
+    /* Narrow viewports: smaller canvas + fewer frames + higher capture fps = much shorter wall-clock time. */
+    var W = narrow ? 720 : 1080;
+    var H = narrow ? 1280 : 1920;
+    var inset = narrow ? Math.round(46 * (W / 1080)) : 46;
+    var totalFrames = narrow ? 22 : 34;
+    var fps = narrow ? 22 : 17;
+    var videoBitsPerSecond = narrow ? 2800000 : 4500000;
     var host = document.createElement('div');
     host.setAttribute('aria-hidden', 'true');
     host.style.cssText = 'position:fixed;left:-10000px;top:0;width:900px;height:900px;overflow:hidden;opacity:0.01;pointer-events:none;';
@@ -2794,10 +2802,8 @@
       var ctx = canvas.getContext('2d');
       var glCanvas = inst.renderer.domElement;
 
-      var totalFrames = 48;
-      var fps = 12;
       var stream = canvas.captureStream(fps);
-      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5800000 });
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: videoBitsPerSecond });
       var chunks = [];
       rec.ondataavailable = function(e) {
         if (e.data && e.data.size) chunks.push(e.data);
