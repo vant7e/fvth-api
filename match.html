@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FVTH MATCH SYSTEM — Birth Code Crystal Configuration</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    /* --- CSS Variables: classified / tactical dark --- */
+    :root {
+      --bg-deep: #0a0a0b;
+      --bg-panel: #111113;
+      --bg-elevated: #161619;
+      --border-subtle: #252528;
+      --border-accent: #2a2a2e;
+      --text-primary: #e8e8ea;
+      --text-secondary: #9a9aa0;
+      --text-muted: #5c5c62;
+      --accent-silver: #8a8a8f;
+      --accent-green: #3d4a3d;
+      --accent-amber: #5c4a2a;
+      --glow-subtle: rgba(138, 138, 143, 0.12);
+      --glow-strong: rgba(138, 138, 143, 0.2);
+      --font-mono: 'SF Mono', 'Consolas', 'Monaco', 'Inconsolata', monospace;
+      --font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-system);
+      line-height: 1.45;
+      overflow-x: hidden;
+      position: relative;
+    }
+    /* 1. Extremely subtle engineering grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(138,138,143,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(138,138,143,0.025) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    /* 6. Vignette depth: darken edges, center feels deeper */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 90%);
+    }
+
+    .page-wrap {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr minmax(300px, 360px);
+      grid-template-rows: auto 1fr;
+      grid-template-areas: "header header" "main   sidebar";
+      position: relative;
+      z-index: 1;
+    }
+    @media (max-width: 900px) {
+      .page-wrap {
+        grid-template-columns: 1fr;
+        grid-template-areas: "header" "main" "sidebar";
+      }
+    }
+
+    /* --- Header --- */
+    header {
+      grid-area: header;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 1.5rem;
+      background: var(--bg-panel);
+    }
+    .header-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 1.5rem; }
+    .brand {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      color: var(--text-primary);
+    }
+    .subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .status-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
+    .status-pill {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: 0.2rem 0.5rem;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+    }
+
+    /* --- Main --- */
+    main {
+      grid-area: main;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .input-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      padding: 1.25rem 1.5rem;
+    }
+    .input-section label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .input-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; }
+    .input-row input[type="date"] {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-accent);
+      color: var(--text-primary);
+      color-scheme: dark;
+    }
+    .input-row input[type="date"]:focus {
+      outline: none;
+      border-color: var(--accent-silver);
+      box-shadow: 0 0 0 1px var(--accent-silver);
+    }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 1rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-accent);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn:hover { border-color: var(--accent-silver); background: #1e1e21; }
+    .btn:active { background: var(--border-accent); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .diagnostic-line {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+    }
+    .diagnostic-line .label { color: var(--text-muted); letter-spacing: 0.06em; }
+    .diagnostic-line .value { color: var(--text-secondary); margin-top: 0.15rem; }
+
+    /* --- Result section: structural field + ambient --- */
+    .result-section {
+      flex: 1;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      padding: 1.25rem;
+      min-height: 380px;
+      position: relative;
+      overflow: hidden;
+    }
+    .result-section > #beadContainer {
+      position: relative;
+      z-index: 3;
+    }
+    /* Subtle ambient: scan line */
+    .result-section::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(138,138,143,0.06), transparent);
+      animation: scan 8s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scan {
+      0% { top: 0; opacity: 0; }
+      5% { opacity: 1; }
+      95% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+    .result-section .section-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-align: center;
+      padding: 1rem;
+    }
+    /* Boot sequence: message + visual feedback */
+    .boot-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      z-index: 4;
+    }
+    .boot-message.visible { opacity: 1; }
+    /* Boot-phase: fade previous content, show scanning + guide rings */
+    .result-section.boot-phase .bead-field-wrap { opacity: 0.15; transition: opacity 0.35s ease; }
+    .result-section.boot-phase .boot-visuals { opacity: 1; }
+    .boot-visuals {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 5;
+    }
+    /* 6. Boot scan ring: expanding ring animation during initialization */
+    .boot-scan-circle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 1px solid rgba(138,138,143,0.35);
+      border-radius: 50%;
+      animation: boot-scan-ring 1.8s ease-out infinite;
+      box-shadow: 0 0 12px rgba(138,138,143,0.08);
+    }
+    .boot-scan-circle::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border: 1px solid rgba(138,138,143,0.12);
+      border-radius: 50%;
+      animation: boot-scan-ring 1.8s ease-out infinite 0.4s;
+    }
+    .boot-scan-circle, .boot-scan-circle::after { transform-origin: center center; }
+    @keyframes boot-scan-ring {
+      0% { transform: scale(0.4); opacity: 0.6; }
+      70% { transform: scale(2.4); opacity: 0.12; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+    .boot-guide-ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 1px solid rgba(138,138,143,0.08);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .boot-guide-ring.inner { width: 56%; height: 56%; animation: boot-rotate 20s linear infinite; }
+    .boot-guide-ring.outer { width: 84%; height: 84%; animation: boot-rotate 28s linear infinite reverse; }
+    @keyframes boot-rotate { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    /* Bead field: radial / constellation container */
+    /* 2. Radial system field glow around bead structure */
+    .bead-field-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -8%;
+      left: 50%;
+      top: 50%;
+      width: 116%;
+      height: 116%;
+      margin-left: -58%;
+      margin-top: -58%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(138,138,143,0.04) 65%, transparent 75%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bead-field-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1;
+      margin: 0 auto;
+      transition: opacity 0.4s ease, box-shadow 0.4s ease;
+    }
+    .bead-field-wrap.field-pulse {
+      animation: field-pulse-once 1.2s ease-out;
+    }
+    @keyframes field-pulse-once {
+      0% { box-shadow: 0 0 0 0 rgba(138,138,143,0); }
+      40% { box-shadow: 0 0 30px 2px rgba(138,138,143,0.08); }
+      100% { box-shadow: 0 0 0 0 rgba(138,138,143,0); }
+    }
+    /* 4. Guide rings behind bead layout (persistent, very faint) */
+    .system-guide-rings {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .system-guide-rings .ring {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border: 1px solid rgba(138,138,143,0.06);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .system-guide-rings .ring.r1 { width: 56%; height: 56%; animation: guide-drift 24s linear infinite; }
+    .system-guide-rings .ring.r2 { width: 78%; height: 78%; animation: guide-drift 32s linear infinite reverse; }
+    .system-guide-rings .ring.r3 { width: 96%; height: 96%; animation: guide-drift 40s linear infinite; }
+    @keyframes guide-drift { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    .bead-field {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(22,22,25,0.6) 0%, transparent 70%);
+      z-index: 1;
+    }
+    /* Analysis: slow rotating energy veil (pre-assembly “system running”) */
+    .result-section.mode-analysis .bead-field.energy-ring::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.14;
+      background: conic-gradient(
+        from 0deg,
+        rgba(255,255,255,0.02),
+        rgba(255,255,255,0.14),
+        rgba(180,195,210,0.08),
+        rgba(255,255,255,0.02)
+      );
+      -webkit-mask: radial-gradient(closest-side, transparent 58%, #000 59%, #000 99.5%, transparent 100%);
+      mask: radial-gradient(closest-side, transparent 58%, #000 59%, #000 99.5%, transparent 100%);
+      animation: rotate-energy-field 20s linear infinite;
+    }
+    @keyframes rotate-energy-field {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    #centerGlow {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 80px;
+      height: 80px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(138,138,143,0.15), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    #centerGlow.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    /* Interaction + layout only; WebGL canvas (.fvth-field-webgl-canvas) stacks above (z-index:4 in engine). */
+    .bead-field-nodes {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+    /* Hide flat bead-face chrome once WebGL owns the field (avoids dots bleeding through transparent GL). */
+    .bead-field.fvth-webgl-field .bead .bead-face {
+      opacity: 0;
+      border-color: transparent;
+      box-shadow: none !important;
+      animation: none !important;
+    }
+    .bead-field.fvth-webgl-field .bead .bead-code {
+      opacity: 0;
+    }
+    /* Center ambient pulse (subtle) */
+    .bead-field::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 12%;
+      height: 12%;
+      margin-left: -6%;
+      margin-top: -6%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(138,138,143,0.06) 0%, transparent 70%);
+      animation: center-breathe 4s ease-in-out infinite;
+    }
+    @keyframes center-breathe {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+      50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+    }
+    /* 5. Connection lines: curved paths (quadratic), behind beads */
+    .bead-lines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bead-lines path {
+      fill: none;
+      stroke: rgba(138, 138, 143, 0.28);
+      stroke-width: 0.4;
+      stroke-dasharray: 4 8;
+      stroke-linecap: round;
+      opacity: 0.2;
+      transition: opacity 0.35s ease, stroke 0.3s ease, stroke-dashoffset 0.4s ease;
+      filter: drop-shadow(0 0 1px rgba(138,138,143,0.15));
+    }
+    .bead-lines path.visible {
+      animation: line-breathe 5s ease-in-out infinite, line-flow 18s linear infinite;
+    }
+    .bead-lines path.line-active {
+      opacity: 1;
+      stroke: rgba(200,200,200,0.6);
+    }
+    .bead-lines path.line-dim {
+      opacity: 0.05;
+    }
+    /* Function-linked glow presets (applied to .bead-face on hover via FUNCTION_MAP) */
+    .bead-face.resonance.fx-pulse_soft {
+      animation: fx-pulse-soft 2.2s ease-in-out infinite !important;
+    }
+    .bead-face.resonance.fx-wave {
+      animation: fx-wave-glow 2.8s ease-in-out infinite !important;
+    }
+    .bead-face.resonance.fx-burst {
+      animation: fx-burst-glow 1.6s ease-in-out infinite !important;
+    }
+    .bead-face.resonance.fx-sharp {
+      animation: fx-sharp-glow 2s linear infinite !important;
+    }
+    .bead-face.resonance.fx-expand {
+      animation: fx-expand-glow 2.4s ease-in-out infinite !important;
+    }
+    @keyframes fx-pulse-soft {
+      0%, 100% { box-shadow: 0 0 8px rgba(180,190,200,0.25); }
+      50% { box-shadow: 0 0 22px rgba(200,210,220,0.55); }
+    }
+    @keyframes fx-wave-glow {
+      0%, 100% { box-shadow: 0 0 10px rgba(100,160,200,0.3); }
+      33% { box-shadow: 0 0 18px rgba(120,180,210,0.45); }
+      66% { box-shadow: 0 0 14px rgba(90,150,190,0.38); }
+    }
+    @keyframes fx-burst-glow {
+      0%, 100% { box-shadow: 0 0 6px rgba(220,200,160,0.35); }
+      40% { box-shadow: 0 0 24px rgba(240,220,180,0.65); }
+    }
+    @keyframes fx-sharp-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(200,200,210,0.4), inset 0 0 6px rgba(255,255,255,0.08); }
+      50% { box-shadow: 0 0 16px rgba(230,230,240,0.55), inset 0 0 4px rgba(255,255,255,0.12); }
+    }
+    @keyframes fx-expand-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(160,170,150,0.35); transform: scale(1); }
+      50% { box-shadow: 0 0 20px 4px rgba(170,185,155,0.45); transform: scale(1.06); }
+    }
+    @keyframes line-breathe {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+    @keyframes line-flow {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: 40; }
+    }
+
+    /* Beads: floating nodes; image from API (bead.image) served at /beads/ on API origin */
+    .bead {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      margin-left: 0;
+      margin-top: 0;
+      transform: translate(-50%, -50%) scale(0.5);
+      border-radius: 50%;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      opacity: 0;
+      will-change: transform, opacity;
+      z-index: 1;
+      transition:
+        opacity 0.55s cubic-bezier(0.33, 1, 0.68, 1),
+        transform 0.55s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+    .bead-face {
+      position: relative;
+      z-index: 1;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid var(--border-accent);
+      flex-shrink: 0;
+      background: transparent;
+      transition: transform 0.2s ease, box-shadow 0.25s ease;
+    }
+    .bead-face .bead-code {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      text-align: center;
+      font-size: 0.45rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8);
+      z-index: 2;
+      pointer-events: none;
+    }
+    .bead.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    /* Analysis: subtle drift after build (not game-like) */
+    .result-section.mode-analysis .bead.readonly.visible.orbiting:not(.hover):not(.dim) {
+      animation: analysis-orbit-drift 16s ease-in-out infinite;
+    }
+    .result-section.mode-analysis .bead.readonly.visible.orbiting.dim {
+      animation: none;
+    }
+    @keyframes analysis-orbit-drift {
+      0%, 100% { transform: translate(-50%, -50%) scale(1) translate(0, 0); }
+      25% { transform: translate(-50%, -50%) scale(1) translate(1.2px, -1.8px); }
+      50% { transform: translate(-50%, -50%) scale(1) translate(-0.8px, 1.2px); }
+      75% { transform: translate(-50%, -50%) scale(1) translate(1px, 0.6px); }
+    }
+    .bead.visible .bead-face {
+      animation: bead-pulse-face 3s ease-in-out infinite;
+    }
+    @keyframes bead-pulse-face {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(138,138,143,0); }
+      50% { box-shadow: 0 0 12px 0 var(--glow-subtle); }
+    }
+    .bead.size-m { width: 40px; height: 40px; font-size: 0.58rem; }
+    .bead.size-m .bead-face { width: 40px; height: 40px; }
+    .bead.size-l { width: 44px; height: 44px; font-size: 0.6rem; }
+    .bead.size-l .bead-face { width: 44px; height: 44px; }
+    /* Resonance field (hover probe) — glow on .bead-face only; FUNCTION_MAP fx uses .resonance + keyframes */
+    .bead.hover .bead-face:not(.resonance) {
+      box-shadow: 0 0 20px rgba(200,200,200,0.4);
+      transform: scale(1.15);
+      transition: transform 0.2s ease, box-shadow 0.25s ease;
+      z-index: 5;
+    }
+    .bead.hover .bead-face.resonance {
+      transform: scale(1.12);
+      transition: transform 0.2s ease, box-shadow 0.25s ease;
+      z-index: 5;
+    }
+    .bead.related .bead-face {
+      box-shadow: 0 0 12px rgba(138,138,143,0.35);
+      transform: scale(1.05);
+      transition: transform 0.2s ease, box-shadow 0.25s ease;
+    }
+    .bead.dim {
+      opacity: 0.25;
+      transition: opacity 0.25s ease;
+    }
+    .bead.dim .bead-face {
+      transform: scale(0.96);
+    }
+    .bead.hover { z-index: 5; animation: none !important; }
+    .bead.related { z-index: 3; animation: none; }
+    /* Hover resonance: ring expands past face (face stays z-index above center) */
+    .bead.hover::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 150%;
+      height: 150%;
+      margin-left: -75%;
+      margin-top: -75%;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+      z-index: 0;
+      background: transparent;
+      animation: bead-hover-ripple 1.6s ease-out infinite;
+    }
+    @keyframes bead-hover-ripple {
+      from { transform: scale(0.92); opacity: 0.5; }
+      to { transform: scale(1.35); opacity: 0; }
+    }
+    .bead .bead-qty-bar { font-size: 0.45rem; letter-spacing: 0; color: var(--text-muted); margin-top: 0.08rem; line-height: 1.1; width: 100%; text-align: center; }
+    .bead .bead-qty-controls { display: flex; align-items: center; justify-content: center; gap: 0.15rem; margin-top: 0.05rem; }
+    .bead .bead-qty-controls button { width: 12px; height: 12px; padding: 0; border: 1px solid var(--border-subtle); background: var(--bg-deep); color: var(--text-muted); font-size: 0.5rem; cursor: pointer; line-height: 1; font-family: var(--font-mono); }
+    .bead .bead-qty-controls button:hover:not(:disabled) { border-color: var(--accent-silver); color: var(--text-primary); }
+    .bead .bead-qty-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .bead .bead-qty-controls span { min-width: 1em; font-size: 0.5rem; color: var(--text-secondary); }
+    /* Quantity glow tiers (on face only — keeps circle) */
+    .bead.qty-0 .bead-face { box-shadow: none; }
+    .bead.qty-1-3 .bead-face { box-shadow: 0 0 6px rgba(138,138,143,0.15); }
+    .bead.qty-4-6 .bead-face { box-shadow: 0 0 10px rgba(138,138,143,0.22), 0 0 0 1px rgba(138,138,143,0.1); }
+    .bead.qty-7-9 .bead-face { box-shadow: 0 0 14px rgba(138,138,143,0.3), 0 0 0 1px rgba(138,138,143,0.12); }
+    .bead.qty-10-12 .bead-face { box-shadow: 0 0 18px rgba(138,138,143,0.4), 0 0 0 1px rgba(138,138,143,0.15); }
+    /* Selection ring (after qty so selected state wins when both apply) */
+    .bead.selected .bead-face {
+      border-color: var(--accent-silver);
+      box-shadow: 0 0 20px var(--glow-strong), 0 0 0 1px var(--accent-silver);
+      z-index: 2;
+      animation: bead-pulse-face 2s ease-in-out infinite;
+    }
+    .bead.readonly {
+      pointer-events: auto;
+      cursor: default;
+    }
+    @keyframes bead-readonly-breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .bead.readonly .bead-face {
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+      animation: bead-readonly-breathe 5s ease-in-out infinite;
+    }
+    .bead.readonly.hover .bead-face:not(.resonance),
+    .bead.readonly.related .bead-face {
+      animation: none;
+    }
+    /* bead-code: only injected in assembly mode in JS (not in analysis). */
+    .result-section.mode-analysis .bead-qty-section {
+      display: none !important;
+    }
+    .result-section.mode-assembly .bead:not(.readonly) {
+      cursor: pointer;
+    }
+
+    /* --- Sidebar: diagnostics console --- */
+    aside {
+      grid-area: sidebar;
+      border-left: 1px solid var(--border-subtle);
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-panel);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    @media (max-width: 900px) {
+      aside { border-left: none; border-top: 1px solid var(--border-subtle); }
+    }
+    .panel-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .panel-default {
+      color: var(--text-muted);
+      line-height: 1.6;
+      letter-spacing: 0.04em;
+    }
+    .panel-detail { display: none; }
+    .panel-detail.active { display: block; }
+    .panel-detail .name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.06em;
+    }
+    .panel-detail .row { margin-bottom: 0.4rem; color: var(--text-secondary); }
+    .panel-detail .row span:first-child { color: var(--text-muted); margin-right: 0.5rem; }
+    .panel-detail .meta-block {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .panel-detail .meta-block .row { margin-bottom: 0.25rem; }
+    .panel-detail .desc {
+      margin: 0;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      font-size: 0.72rem;
+    }
+    .panel-actions {
+      margin-top: 0.9rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .panel-action-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      padding: 0.4rem 0.7rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-accent);
+      color: var(--text-secondary);
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .panel-action-btn:hover {
+      border-color: var(--accent-silver);
+      color: var(--text-primary);
+    }
+    .panel-action-msg {
+      margin-top: 0.45rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .panel-detail .clear-btn {
+      margin-top: 0.75rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      background: none;
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      font-family: var(--font-mono);
+    }
+    .panel-detail .clear-btn:hover { color: var(--text-secondary); border-color: var(--accent-silver); }
+    .summary-block {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .summary-block .row { margin-bottom: 0.25rem; }
+    .summary-block .row span:first-child { margin-right: 0.5rem; }
+
+    /* --- STRUCTURE ASSEMBLY (stage: match / assembly) --- */
+    .assembly-block {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+    }
+    .assembly-block.highlight { border-color: rgba(138,138,143,0.35); box-shadow: 0 0 0 1px rgba(138,138,143,0.08); padding: 1rem; margin-top: 1rem; }
+    .assembly-block .assembly-title { color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .assembly-block .assembly-count { color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .assembly-block .assembly-list { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow-y: auto; }
+    .assembly-block .assembly-list li {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary); font-size: 0.65rem;
+    }
+    .assembly-block .assembly-list li .unit-name { flex: 1; }
+    .assembly-block .assembly-remove {
+      background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
+      font-family: var(--font-mono); font-size: 0.6rem; padding: 0.2rem 0.4rem; cursor: pointer;
+    }
+    .assembly-block .assembly-remove:hover { color: var(--text-primary); border-color: var(--accent-silver); }
+    .assembly-block .assembly-msg { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.62rem; }
+    .assembly-block .btn-assembly { margin-top: 0.6rem; width: 100%; }
+    .assembly-block .btn-preview { margin-top: 0.5rem; width: 100%; }
+    .assembly-bracelet-wrap { margin-top: 0.75rem; text-align: center; }
+    .assembly-bracelet-title { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .assembly-bracelet-ring {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto;
+    }
+    .assembly-bead-3d {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-sizing: border-box;
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.15);
+    }
+    /* --- BRACELET PREVIEW (stage: preview) — WebGL main ring only --- */
+    .bracelet-preview {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 3;
+    }
+    .bracelet-preview.visible {
+      display: flex;
+      opacity: 1;
+    }
+    .bracelet-preview .bracelet-ring {
+      position: relative;
+      width: min(640px, 92vmin);
+      height: min(640px, 92vmin);
+      flex-shrink: 0;
+    }
+    .bracelet-preview .bracelet-ring canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      vertical-align: top;
+      cursor: grab;
+      touch-action: none;
+    }
+    .bracelet-preview .bracelet-ring canvas:active { cursor: grabbing; }
+    .bracelet-preview .preview-actions { margin-top: 1rem; text-align: center; }
+    .bracelet-preview .btn-deploy,
+    .bracelet-preview .btn-add-cart { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; padding: 0.5rem 1rem; margin: 0 0.25rem; background: var(--bg-elevated); border: 1px solid var(--border-accent); color: var(--text-primary); cursor: pointer; }
+    .bracelet-preview .btn-deploy:hover,
+    .bracelet-preview .btn-add-cart:hover { border-color: var(--accent-silver); }
+    .bracelet-preview .config-code { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text-muted); margin-top: 0.75rem; }
+    .bracelet-preview .config-code strong { color: var(--text-secondary); }
+    .result-section.stage-preview .bead-field-wrap { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+    .result-section.stage-preview #beadContainer .empty-state { opacity: 0; pointer-events: none; }
+
+    /* 3. Very faint drifting particles (environmental depth) */
+    .env-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .env-particles .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(138,138,143,0.25);
+      animation: particle-drift 28s ease-in-out infinite;
+    }
+    @keyframes particle-drift {
+      0%, 100% { transform: translate(0, 0); opacity: 0.2; }
+      33% { transform: translate(12px, -18px); opacity: 0.3; }
+      66% { transform: translate(-8px, 12px); opacity: 0.25; }
+    }
+
+    /* --- ENERGY PROFILE ANALYSIS: embedded in .result-section (not viewport-fixed HUD) --- */
+    .radar-module.energy-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 260px;
+      max-width: calc(100% - 40px);
+      z-index: 2;
+      pointer-events: none;
+      background: rgba(10, 10, 14, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      font-family: var(--font-mono);
+      overflow: hidden;
+      padding: 0.55rem 0.6rem 0.7rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-radius: 2px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #radarSvg #radarDataLayer {
+        filter: none !important;
+      }
+      .result-section.mode-analysis .bead-field.energy-ring::after {
+        animation: none !important;
+      }
+      .result-section.mode-analysis .bead.readonly.visible.orbiting {
+        animation: none !important;
+      }
+      .bead.hover::after {
+        animation: none !important;
+      }
+    }
+    .radar-module .radar-title {
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .radar-module .radar-legend {
+      display: flex;
+      gap: 0.85rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .radar-module .radar-legend span { display: flex; align-items: center; gap: 0.3rem; }
+    .radar-module .radar-legend .dot-birth { width: 5px; height: 5px; border-radius: 50%; background: #5aa8c7; box-shadow: 0 0 4px rgba(90,168,199,0.4); }
+    .radar-module .radar-legend .dot-structure { width: 5px; height: 5px; border-radius: 50%; background: #cfd6dc; box-shadow: 0 0 4px rgba(255,255,255,0.3); }
+    .radar-module .radar-svg-wrap {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+      margin: 0 auto;
+      flex-shrink: 0;
+    }
+    .radar-module .radar-svg-wrap svg#radarSvg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    /* Signal layer only: larger “read” without enlarging the chrome panel */
+    #radarSvg #radarDataLayer {
+      transform: scale(1.4);
+      transform-origin: center;
+      transform-box: fill-box;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+    }
+    @media (max-width: 900px) {
+      .radar-module.energy-panel {
+        width: min(240px, calc(100% - 32px));
+        bottom: 14px;
+        left: 14px;
+        max-width: calc(100% - 28px);
+      }
+      #radarSvg #radarDataLayer {
+        transform: scale(1.28);
+      }
+    }
+    .radar-module .radar-bg circle {
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 0.35;
+      opacity: 0.22;
+      fill: none;
+    }
+    .radar-module .radar-bg .radar-axis {
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 0.4;
+      opacity: 0.28;
+    }
+    .radar-module .radar-bg .radar-axis.highlight { stroke: rgba(255,255,255,0.18); opacity: 0.45; }
+    .radar-module .radar-bg .radar-axis.exceeds { stroke: rgba(207,214,220,0.4); opacity: 0.5; }
+    .radar-module .radar-birth-polygon {
+      fill: rgba(80,160,200,0.05);
+      stroke: #5aa8c7;
+      stroke-width: 1.2;
+      stroke-dasharray: 3 3;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 3px rgba(90,168,199,0.4));
+    }
+    .radar-module .radar-polygon {
+      fill: rgba(200,210,220,0.06);
+      stroke: #cfd6dc;
+      stroke-width: 1.6;
+      opacity: 0.85;
+      transition: stroke 0.6s ease, fill 0.6s ease, d 0.6s ease;
+      filter: drop-shadow(0 0 3px rgba(255,255,255,0.3));
+    }
+    .radar-module .radar-node {
+      fill: #e3e7eb;
+      filter: drop-shadow(0 0 2px rgba(255,255,255,0.4));
+    }
+    .radar-module .radar-core {
+      fill: rgba(90,168,199,0.6);
+      filter: drop-shadow(0 0 2px rgba(90,168,199,0.5));
+      transform-origin: 50% 50%;
+      transform-box: fill-box;
+      animation: radar-core-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes radar-core-pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+    .radar-module .radar-values {
+      margin-top: 0.5rem;
+      font-size: 0.52rem;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .radar-module .radar-values .energy-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .radar-module .radar-values .energy-row .name { color: var(--text-muted); min-width: 2.8em; }
+    .radar-module .radar-values .energy-row .val { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .radar-module .radar-values .energy-row .delta { display: flex; align-items: center; gap: 0.2rem; font-variant-numeric: tabular-nums; }
+    .radar-module .radar-values .energy-row .delta.up { color: #cfd6dc; }
+    .radar-module .radar-values .energy-row .delta.down { color: #5aa8c7; }
+    .radar-module .radar-balance-label {
+      margin-top: 0.5rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+    .radar-module .radar-balance-bar-wrap {
+      width: 100%;
+      max-width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .radar-module .radar-balance-bar-fill {
+      height: 100%;
+      transition: width 0.4s ease, background 0.3s ease;
+    }
+    .radar-module .radar-balance-bar-fill.stable { background: rgba(60,180,100,0.7); }
+    .radar-module .radar-balance-bar-fill.unstable { background: rgba(255,155,77,0.7); }
+    .radar-module .radar-balance-pct {
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="env-particles" id="envParticles" aria-hidden="true"></div>
+  <div class="page-wrap">
+    <header>
+      <div class="header-top">
+        <span class="brand">FVTH MATCH SYSTEM</span>
+        <span class="subtitle">Birth Code Crystal Configuration Interface</span>
+      </div>
+      <div class="status-row">
+        <span class="status-pill">ACTIVE</span>
+        <span class="status-pill">STRUCTURAL</span>
+        <span class="status-pill">STABILITY</span>
+        <span class="status-pill">PHASE 01</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="input-section">
+        <label>BIRTH CODE INPUT</label>
+        <div class="input-row">
+          <input type="datetime-local" id="birthDate" aria-label="Birth date and time" />
+          <button type="button" class="btn" id="btnGenerate">Generate Configuration</button>
+          <button type="button" class="btn" id="btnRegenerate" style="display:none;">Regenerate</button>
+        </div>
+        <div class="diagnostic-line" id="diagnostic">
+          <div><div class="label">RESONANCE CLASS</div><div class="value" id="resonance">—</div></div>
+          <div><div class="label">ELEMENT BIAS</div><div class="value" id="elementBias">—</div></div>
+          <div><div class="label">STABILITY INDEX</div><div class="value" id="stability">—</div></div>
+          <div><div class="label">CONFIGURATION STATUS</div><div class="value" id="configStatus">Awaiting input.</div></div>
+        </div>
+      </section>
+
+      <section class="result-section mode-analysis" id="resultSection">
+        <div class="section-title">UNIT MAP — CONFIGURATION RESULT</div>
+        <div class="boot-visuals" id="bootVisuals">
+          <div class="boot-scan-circle"></div>
+          <div class="boot-guide-ring inner"></div>
+          <div class="boot-guide-ring outer"></div>
+        </div>
+        <div class="boot-message" id="bootMessage"></div>
+        <div id="beadContainer">
+          <div class="empty-state" id="emptyState">
+            Enter birth code and generate to display 24 active units.<br>Structure over belief.
+          </div>
+          <div class="bead-field-wrap" id="beadFieldWrap" style="display:none;">
+            <div class="system-guide-rings">
+              <span class="ring r1"></span>
+              <span class="ring r2"></span>
+              <span class="ring r3"></span>
+            </div>
+            <svg class="bead-lines" id="beadLines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+            <div class="bead-field" id="beadField">
+              <div id="centerGlow" aria-hidden="true"></div>
+              <div class="bead-field-nodes" id="beadFieldNodes"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bracelet-preview" id="braceletPreview">
+          <div>
+            <div class="bracelet-ring" id="braceletRing"></div>
+            <div class="config-code" id="braceletConfigCode">FVTH CONFIG<br><strong>—</strong></div>
+            <div class="preview-actions">
+              <button type="button" class="btn-add-cart" id="btnAddBraceletToCart">ADD BRACELET TO CART</button>
+              <button type="button" class="btn-deploy" id="btnDeployStructure">DEPLOY STRUCTURE</button>
+            </div>
+          </div>
+        </div>
+        <!-- Embedded analysis module (anchors to .result-section; not a viewport-fixed HUD) -->
+        <div class="radar-module energy-panel" id="radarModule" aria-label="Energy profile analysis">
+          <span class="radar-title">ENERGY PROFILE ANALYSIS</span>
+          <div class="radar-legend">
+            <span><i class="dot-birth"></i> Birth Profile</span>
+            <span><i class="dot-structure"></i> Structure Profile</span>
+          </div>
+          <div class="radar-svg-wrap">
+            <svg id="radarSvg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+              <g class="radar-bg">
+                <circle cx="50" cy="50" r="10"/>
+                <circle cx="50" cy="50" r="20"/>
+                <circle cx="50" cy="50" r="30"/>
+                <circle cx="50" cy="50" r="40"/>
+                <line class="radar-axis" data-axis="0" x1="50" y1="50" x2="50" y2="10"/>
+                <line class="radar-axis" data-axis="1" x1="50" y1="50" x2="88.04" y2="62.35"/>
+                <line class="radar-axis" data-axis="2" x1="50" y1="50" x2="73.52" y2="17.61"/>
+                <line class="radar-axis" data-axis="3" x1="50" y1="50" x2="26.48" y2="17.61"/>
+                <line class="radar-axis" data-axis="4" x1="50" y1="50" x2="11.96" y2="62.35"/>
+              </g>
+              <circle class="radar-core" cx="50" cy="50" r="0.85"/>
+              <g id="radarDataLayer" class="radar-data-layer" aria-hidden="true">
+                <polygon id="birthRadarPolygon" class="radar-birth-polygon" points="50,30 69.04,56.18 61.76,33.82 38.24,33.82 30.96,56.18"/>
+                <polygon id="radarPolygon" class="radar-polygon" points="50,30 69.04,56.18 61.76,33.82 38.24,33.82 30.96,56.18"/>
+                <g id="radarNodes">
+                  <circle class="radar-node" r="1.4" id="radarNode0" cx="50" cy="30"/>
+                  <circle class="radar-node" r="1.4" id="radarNode1" cx="69.04" cy="56.18"/>
+                  <circle class="radar-node" r="1.4" id="radarNode2" cx="61.76" cy="33.82"/>
+                  <circle class="radar-node" r="1.4" id="radarNode3" cx="38.24" cy="33.82"/>
+                  <circle class="radar-node" r="1.4" id="radarNode4" cx="30.96" cy="56.18"/>
+                </g>
+              </g>
+            </svg>
+          </div>
+          <div class="radar-values" id="radarValues">
+            <div class="energy-row" data-key="fire"><span class="name">Fire</span><span class="val" id="radarVal0">—</span><span class="delta" id="radarDelta0">—</span></div>
+            <div class="energy-row" data-key="earth"><span class="name">Earth</span><span class="val" id="radarVal1">—</span><span class="delta" id="radarDelta1">—</span></div>
+            <div class="energy-row" data-key="metal"><span class="name">Metal</span><span class="val" id="radarVal2">—</span><span class="delta" id="radarDelta2">—</span></div>
+            <div class="energy-row" data-key="water"><span class="name">Water</span><span class="val" id="radarVal3">—</span><span class="delta" id="radarDelta3">—</span></div>
+            <div class="energy-row" data-key="wood"><span class="name">Wood</span><span class="val" id="radarVal4">—</span><span class="delta" id="radarDelta4">—</span></div>
+          </div>
+          <div class="radar-balance-label">STRUCTURE BALANCE</div>
+          <div class="radar-balance-bar-wrap">
+            <div class="radar-balance-bar-fill" id="radarBalanceBar" style="width:0%"></div>
+          </div>
+          <div class="radar-balance-pct" id="radarBalance">—</div>
+        </div>
+      </section>
+    </main>
+
+    <aside>
+      <div class="panel-title" id="panelTitle">STRUCTURAL PROFILE</div>
+      <div class="panel-default" id="panelDefault">
+        <span class="panel-phase-hint">Analysis: read-only unit map. Enter assembly to build your bracelet.</span>
+      </div>
+      <div class="panel-detail" id="panelDetail">
+        <div class="name" id="detailName">—</div>
+        <section class="panel-spec" aria-label="Unit specifications">
+          <div class="row"><span class="field-label">Material</span><span class="field-value" id="detailMaterial">—</span></div>
+          <div class="row"><span class="field-label">Element</span><span class="field-value" id="detailElement">—</span></div>
+          <div class="row row-level"><span class="field-label">Level</span><span class="field-value field-level" id="detailLevel">—</span></div>
+          <div class="row"><span class="field-label">Tier</span><span class="field-value" id="detailTier">—</span></div>
+        </section>
+        <div class="meta-block" id="detailMeta" aria-label="Diagnostic metrics">
+          <div class="row"><span class="field-label">Signal Integrity</span><span class="field-value" id="detailSignal">—</span></div>
+          <div class="row"><span class="field-label">Alignment Stability</span><span class="field-value" id="detailAlign">—</span></div>
+          <div class="row"><span class="field-label">Resonance Phase</span><span class="field-value" id="detailResonance">—</span></div>
+          <div class="row row-density"><span class="field-label">Material Density Index</span><span class="field-value" id="detailDensity">—</span></div>
+        </div>
+        <div class="desc-block">
+          <div class="field-label" id="detailDescLabel">Description</div>
+          <p class="desc" id="detailDesc" aria-labelledby="detailDescLabel">—</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" class="panel-action-btn" id="btnSaveUnit" style="display:none;">Save Unit</button>
+          <button type="button" class="panel-action-btn" id="btnAddToSystem" style="display:none;">Add To System</button>
+        </div>
+        <div class="panel-action-msg" id="panelActionMsg"></div>
+        <button type="button" class="clear-btn" id="btnClearSelection" style="display:none;">Clear selection</button>
+      </div>
+      <div class="summary-block" id="summaryBlock" style="display:none;">
+        <div class="row"><span>Primary Element</span><span id="summaryPrimary">—</span></div>
+        <div class="row"><span>Secondary Element</span><span id="summarySecondary">—</span></div>
+        <div class="row"><span>Balance Type</span><span id="summaryBalance">—</span></div>
+        <div class="row"><span>Configuration Class</span><span id="summaryClass">—</span></div>
+        <div class="row"><span>Selected Units</span><span id="summarySelectedUnits">0</span></div>
+      </div>
+      <div class="assembly-block" id="assemblyBlock" style="display:none;">
+        <div class="assembly-title">STRUCTURE ASSEMBLY</div>
+        <div class="assembly-count" id="assemblyCount">SELECTED UNITS: 0 / 24</div>
+        <ul class="assembly-list" id="assemblyList"></ul>
+        <div class="assembly-msg" id="assemblyMsg"></div>
+        <div class="assembly-bracelet-wrap" id="assemblyBraceletWrap" style="display:none;">
+          <div class="assembly-bracelet-title">BRACELET BUILD</div>
+          <div class="assembly-bracelet-ring" id="assemblyBraceletRing"></div>
+        </div>
+        <button type="button" class="btn panel-action-btn btn-assembly" id="btnProceedAssembly">ENTER ASSEMBLY</button>
+        <button type="button" class="btn panel-action-btn btn-preview" id="btnGenerateBracelet" style="display:none;">GENERATE BRACELET</button>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+(function() {
+  'use strict';
+
+  // ——— Seeded RNG (deterministic from birth date) ———
+  function mulberry32(seed) {
+    return function() {
+      var t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i) | 0;
+    return h >>> 0;
+  }
+
+  /** Unit map beads: single source of truth — POST /bazi → state.beads (mapApiBeads). No local pool. */
+
+  var ELEMENTS = ['Fire', 'Water', 'Wood', 'Metal', 'Earth'];
+  var RESONANCE_CLASSES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta'];
+  var BALANCE_TYPES = ['Stable', 'Dynamic', 'Neutral', 'Polar', 'Harmonic'];
+  var CONFIG_CLASSES = ['Standard', 'Enhanced', 'Prime', 'Elite', 'Core'];
+  var SIGNAL_LEVELS = ['Optimal', 'Stable', 'Nominal', 'Moderate', 'Calibrated'];
+  var RESONANCE_PHASES = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
+  var ALIGNMENT_LEVELS = ['High', 'Medium-High', 'Medium', 'Stable', 'Locked'];
+  var DENSITY_INDEX = ['0.82', '0.91', '1.00', '1.12', '0.95'];
+
+  function getElementLabel(bead) {
+    return bead.elementAlt ? bead.element + ' / ' + bead.elementAlt : bead.element;
+  }
+
+  // ——— Element profile: base from API (data.profile). Axes: Fire, Earth, Metal, Water, Wood ———
+  var RADAR_R = 40;
+  var RADAR_CX = 50;
+  var RADAR_CY = 50;
+  var RADAR_ANGLES = [-90, -18, 54, 126, 198].map(function(d) { return d * Math.PI / 180; });
+  var PROFILE_KEYS = ['fire', 'earth', 'metal', 'water', 'wood'];
+  var ELEMENT_TO_KEY = { Fire: 'fire', Earth: 'earth', Metal: 'metal', Water: 'water', Wood: 'wood' };
+  var ELEMENT_TO_AXIS = { Fire: 0, Earth: 1, Metal: 2, Water: 3, Wood: 4 };
+
+  function beadElementKey(bead) {
+    if (!bead) return 'metal';
+    var e = bead.element || 'Metal';
+    return ELEMENT_TO_KEY[e] || String(e).toLowerCase().replace(/\s/g, '') || 'metal';
+  }
+
+  function getBeadFieldNodes() {
+    return document.getElementById('beadFieldNodes') || document.getElementById('beadField');
+  }
+  var currentFinalProfile = { fire: 0, earth: 0, metal: 0, water: 0, wood: 0 };
+  var targetFinalProfile = { fire: 0, earth: 0, metal: 0, water: 0, wood: 0 };
+  var BAZI_API_URL = 'http://127.0.0.1:8000/bazi';
+
+  /** Collect candidate image paths/URLs (multi-image: API `images` or | in `image`). */
+  function beadImageCandidates(bead) {
+    if (!bead) return [];
+    if (bead.images && bead.images.length) {
+      return bead.images.map(function(x) { return String(x).trim(); }).filter(Boolean);
+    }
+    var s = bead.image != null ? String(bead.image).trim() : '';
+    if (!s) return [];
+    return s.split('|').map(function(p) { return p.trim(); }).filter(Boolean);
+  }
+
+  /** Random variant per render so units feel varied when CSV lists multiple files. */
+  function pickBeadImageRaw(bead) {
+    var c = beadImageCandidates(bead);
+    if (!c.length) return '';
+    return c[Math.floor(Math.random() * c.length)];
+  }
+
+  /** Stable variant per bead instance (same id + slot + birth code → same file). */
+  function pickStableBeadImageRaw(bead, instanceKey) {
+    var c = beadImageCandidates(bead);
+    if (!c.length) return '';
+    var h = hashStr(String(instanceKey || '') + (bead.id || '') + (state.dateStr || '')) >>> 0;
+    return c[h % c.length];
+  }
+
+  /** Always relative: ./models/xxx.glb (never /models/). */
+  function beadRelativeGlbUrl(model) {
+    if (model == null) return '';
+    var m = String(model).trim();
+    if (!m) return '';
+    if (!/\.(glb|gltf)$/i.test(m)) m = m + '.glb';
+    return './models/' + m.replace(/^\.?\/?models\/?/i, '');
+  }
+
+  /** Non-empty model → GLB URL; empty → '' (3D uses texture-only / sphere fallback). */
+  function glbUrlForBeadModel(bead) {
+    if (!bead || bead.model == null) return '';
+    var m = String(bead.model).trim();
+    if (!m) return '';
+    return beadRelativeGlbUrl(m);
+  }
+
+  /** Fill missing `bead.model` (and `type` if empty) from beads_master.csv via loadBeadTable(). */
+  function applyBeadModelFromCsvTable(beads, table) {
+    if (!beads || !table) return;
+    var i;
+    for (i = 0; i < beads.length; i++) {
+      var b = beads[i];
+      if (!b || b.id == null || b.id === '') continue;
+      var have = b.model != null && String(b.model).trim() !== '';
+      if (have) continue;
+      var row = table[String(b.id)];
+      if (row && row.model != null && String(row.model).trim() !== '') {
+        b.model = String(row.model).trim();
+        if (b.type == null || String(b.type).trim() === '') b.type = b.model;
+      }
+    }
+  }
+
+  /** Texture for Three.js: ./beads/<file> + stable cache buster (data-driven from CSV image). */
+  function beadTextureUrlFor3d(bead, instanceKey) {
+    var raw = pickStableBeadImageRaw(bead, instanceKey);
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) {
+      var v = (hashStr((state.dateStr || '') + (bead.id || '') + String(instanceKey || '')) >>> 0).toString(16);
+      var sep = raw.indexOf('?') >= 0 ? '&' : '?';
+      return raw + sep + 'v=' + v;
+    }
+    var fname = raw.replace(/^\/+/, '').replace(/^beads\/?/i, '');
+    var v = (hashStr((state.dateStr || '') + (bead.id || '') + String(instanceKey || '')) >>> 0).toString(16);
+    return './beads/' + fname.split('/').map(function(p) { return encodeURIComponent(p); }).join('/') + '?v=' + v;
+  }
+
+  /** Append cache-buster so browser reloads images after CSV/API changes. */
+  function withImageCacheBust(url) {
+    if (!url) return '';
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    return url + sep + 'v=' + Date.now();
+  }
+
+  /** Resolve API bead texture path to absolute URL for Three.js TextureLoader. */
+  function beadImageSrc(bead) {
+    var raw = pickBeadImageRaw(bead);
+    if (!raw) return '';
+    var base;
+    if (/^https?:\/\//i.test(raw)) base = raw;
+    else {
+      var path = raw.replace(/^\/+/, '').replace(/^beads\/?/i, '');
+      try {
+        var u = new URL(BAZI_API_URL);
+        base = u.origin + '/beads/' + path.split('/').map(function(p) { return encodeURIComponent(p); }).join('/');
+      } catch (e) {
+        base = '/beads/' + path;
+      }
+    }
+    return withImageCacheBust(base);
+  }
+
+  var radarAnimId = null;
+  var RADAR_LERP = 0.14;
+
+  /** Function → UI + radar (replaces flat ELEMENT_IMPACT). Unknown keys use __default__. */
+  var FUNCTION_MAP = {
+    'energy modulation': {
+      category: 'modulation',
+      glowClass: 'fx-pulse_soft',
+      radarEffect: { fire: 0.22, earth: 0.22, metal: 0.22, water: 0.22, wood: 0.22 },
+      elementPrimaryBoost: 2.08
+    },
+    'signal conditioning': {
+      category: 'conditioning',
+      glowClass: 'fx-sharp',
+      radarEffect: { fire: 0.15, earth: 0.2, metal: 0.45, water: 0.25, wood: 0.15 },
+      elementPrimaryBoost: 1.65
+    },
+    'field stabilization': {
+      category: 'stabilization',
+      glowClass: 'fx-expand',
+      radarEffect: { fire: 0.12, earth: 0.48, metal: 0.18, water: 0.2, wood: 0.22 },
+      elementPrimaryBoost: 1.55
+    },
+    'resonance coupling': {
+      category: 'coupling',
+      glowClass: 'fx-wave',
+      radarEffect: { fire: 0.28, earth: 0.18, metal: 0.2, water: 0.32, wood: 0.32 },
+      elementPrimaryBoost: 1.45
+    },
+    'load balancing': {
+      category: 'distribution',
+      glowClass: 'fx-burst',
+      radarEffect: { fire: 0.35, earth: 0.3, metal: 0.25, water: 0.28, wood: 0.22 },
+      elementPrimaryBoost: 1.35
+    },
+    /* beads_master `function` column = bead chart LEVEL (STANDARD / PREMIUM / COLLECTOR) */
+    'standard': {
+      category: 'modulation',
+      glowClass: 'fx-pulse_soft',
+      radarEffect: { fire: 0.22, earth: 0.22, metal: 0.22, water: 0.22, wood: 0.22 },
+      elementPrimaryBoost: 2.08
+    },
+    'premium': {
+      category: 'modulation',
+      glowClass: 'fx-wave',
+      radarEffect: { fire: 0.24, earth: 0.24, metal: 0.24, water: 0.24, wood: 0.24 },
+      elementPrimaryBoost: 2.12
+    },
+    'collector': {
+      category: 'modulation',
+      glowClass: 'fx-expand',
+      radarEffect: { fire: 0.26, earth: 0.26, metal: 0.26, water: 0.26, wood: 0.26 },
+      elementPrimaryBoost: 2.18
+    },
+    '__default__': {
+      category: 'modulation',
+      glowClass: 'fx-pulse_soft',
+      radarEffect: { fire: 0.22, earth: 0.22, metal: 0.22, water: 0.22, wood: 0.22 },
+      elementPrimaryBoost: 2.08
+    }
+  };
+  var FX_GLOW_CLASSES = ['fx-pulse_soft', 'fx-wave', 'fx-burst', 'fx-sharp', 'fx-expand'];
+
+  function normalizeFunctionKey(s) {
+    return String(s == null ? '' : s).trim().toLowerCase();
+  }
+
+  function getFunctionEntry(bead) {
+    var k = normalizeFunctionKey(getDisplayFunction(bead));
+    if (k && FUNCTION_MAP[k]) return FUNCTION_MAP[k];
+    return FUNCTION_MAP['__default__'];
+  }
+
+  function beadFunctionKey(bead) {
+    return normalizeFunctionKey(getDisplayFunction(bead));
+  }
+
+  /** Per-axis contribution for one bead (FUNCTION_EFFECT × material weight). */
+  function beadFunctionContribution(bead) {
+    var w = materialInfluenceWeight(bead.material);
+    var ent = getFunctionEntry(bead);
+    var ek = beadElementKey(bead);
+    var out = {};
+    PROFILE_KEYS.forEach(function(k) {
+      var base = Number(ent.radarEffect[k]) || 0;
+      var boost = k === ek ? Number(ent.elementPrimaryBoost) || 0 : 0;
+      out[k] = (base + boost) * w;
+    });
+    return out;
+  }
+
+  function emptyElementProfile() {
+    return { fire: 0, earth: 0, metal: 0, water: 0, wood: 0 };
+  }
+
+  function normalizeProfile(profile) {
+    var total = PROFILE_KEYS.reduce(function(a, k) {
+      return a + (Number(profile[k]) || 0);
+    }, 0);
+    if (total <= 0) {
+      var eq = {};
+      PROFILE_KEYS.forEach(function(k) { eq[k] = 20; });
+      return eq;
+    }
+    var normalized = {};
+    PROFILE_KEYS.forEach(function(k) {
+      normalized[k] = +(Number(profile[k]) / total * 100).toFixed(2);
+    });
+    return normalized;
+  }
+
+  /** Material modulates element influence (CSV `material`); default 1.0 */
+  function materialInfluenceWeight(material) {
+    var m = String(material || '').toLowerCase();
+    if (m.indexOf('quartz') !== -1) return 1.2;
+    if (m.indexOf('obsidian') !== -1 || m === 'volcanic_glass') return 0.8;
+    if (m.indexOf('jade') !== -1 || m === 'nephrite' || m.indexOf('jadeite') !== -1) return 1.0;
+    return 1.0;
+  }
+
+  function computeStructureProfile(baseProfile, beads) {
+    var result = {};
+    PROFILE_KEYS.forEach(function(k) {
+      result[k] = Number(baseProfile[k]) || 0;
+    });
+    if (beads && beads.length) {
+      beads.forEach(function(b) {
+        var contrib = beadFunctionContribution(b);
+        PROFILE_KEYS.forEach(function(k) {
+          if (result[k] != null) result[k] += contrib[k] || 0;
+        });
+      });
+    }
+    return normalizeProfile(result);
+  }
+
+  /** Same 20%-ideal formula as backend stability index. */
+  function computeStabilityIndexFromProfile(profile) {
+    if (!profile) return null;
+    var ideal = 20;
+    var deviation = PROFILE_KEYS.reduce(function(s, k) {
+      var v = Number(profile[k]);
+      return s + (isNaN(v) ? 0 : Math.abs(v - ideal));
+    }, 0);
+    return Math.round(100 - deviation / 160 * 100);
+  }
+
+  /** Structure overlay = birth profile + bracelet bead influence (normalized to 100%). */
+  function getFinalProfile() {
+    var base = state.baseProfile;
+    if (!base) return emptyElementProfile();
+    var baseClone = {};
+    PROFILE_KEYS.forEach(function(k) {
+      baseClone[k] = Number(base[k]) || 0;
+    });
+    var beads = typeof getBraceletBeadsFromSelected === 'function' ? getBraceletBeadsFromSelected() : [];
+    return computeStructureProfile(baseClone, beads);
+  }
+
+  /** Hover preview: structure as if hovered map unit were added to the bracelet (real-time radar). */
+  function getProfileWithGhostBead(hoverBead) {
+    var base = state.baseProfile;
+    if (!base || !hoverBead) return getFinalProfile();
+    var baseClone = {};
+    PROFILE_KEYS.forEach(function(k) {
+      baseClone[k] = Number(base[k]) || 0;
+    });
+    var beads = typeof getBraceletBeadsFromSelected === 'function' ? getBraceletBeadsFromSelected().slice() : [];
+    beads.push(hoverBead);
+    return computeStructureProfile(baseClone, beads);
+  }
+
+  /** Sync birth (blue) + structure (white) targets; call after API load or when recomputing. */
+  function updateRadarFromProfiles(birthProfile, structureProfile) {
+    if (birthProfile) {
+      var disp = apiProfileToDisplay(birthProfile);
+      if (disp) state.baseProfile = disp;
+      updateBirthRadarPolygon();
+    }
+    if (structureProfile) {
+      targetFinalProfile = {
+        fire: structureProfile.fire,
+        earth: structureProfile.earth,
+        metal: structureProfile.metal,
+        water: structureProfile.water,
+        wood: structureProfile.wood
+      };
+    } else {
+      targetFinalProfile = getFinalProfile();
+    }
+    if (!radarAnimId) radarAnimId = requestAnimationFrame(updateRadarPolygon);
+  }
+
+  function profileToNormalizedValues(profile) {
+    if (!profile) return [0, 0, 0, 0, 0];
+    return PROFILE_KEYS.map(function(k) {
+      var v = profile[k];
+      var n = v != null && v !== '' ? Number(v) : NaN;
+      return (isNaN(n) ? 0 : n) / 100;
+    });
+  }
+
+  function profileToPoints(profile) {
+    return radarValuesToPoints(profileToNormalizedValues(profile));
+  }
+
+  function updateBirthRadarPolygon() {
+    var poly = document.getElementById('birthRadarPolygon');
+    if (!poly) return;
+    var base = state.baseProfile;
+    if (!base) {
+      poly.setAttribute('points', radarValuesToPoints([0, 0, 0, 0, 0]));
+      return;
+    }
+    poly.setAttribute('points', profileToPoints(base));
+  }
+
+  function radarValuesToPoints(values) {
+    var pts = [];
+    for (var i = 0; i < 5; i++) {
+      var v = values[i];
+      var r = RADAR_R * v;
+      var a = RADAR_ANGLES[i];
+      pts.push((RADAR_CX + r * Math.cos(a)).toFixed(2) + ',' + (RADAR_CY - r * Math.sin(a)).toFixed(2));
+    }
+    return pts.join(' ');
+  }
+
+  function radarValuesToNodePositions(values) {
+    var pos = [];
+    for (var i = 0; i < 5; i++) {
+      var v = values[i];
+      var r = RADAR_R * v;
+      var a = RADAR_ANGLES[i];
+      pos.push({ cx: RADAR_CX + r * Math.cos(a), cy: RADAR_CY - r * Math.sin(a) });
+    }
+    return pos;
+  }
+
+  function setRadarAxisExceeds() {
+    var axes = document.querySelectorAll('.radar-module .radar-axis');
+    var base = state.baseProfile;
+    for (var k = 0; k < 5; k++) {
+      if (axes[k]) {
+        axes[k].classList.remove('exceeds');
+        var key = PROFILE_KEYS[k];
+        if (base && key && currentFinalProfile[key] > base[key]) axes[k].classList.add('exceeds');
+      }
+    }
+  }
+
+  function updateRadarPolygon() {
+    var poly = document.getElementById('radarPolygon');
+    if (!poly) return;
+    var done = true;
+    PROFILE_KEYS.forEach(function(key, i) {
+      currentFinalProfile[key] += (targetFinalProfile[key] - currentFinalProfile[key]) * RADAR_LERP;
+      if (Math.abs(currentFinalProfile[key] - targetFinalProfile[key]) > 0.5) done = false;
+    });
+    poly.setAttribute('points', profileToPoints(currentFinalProfile));
+    var norm = profileToNormalizedValues(currentFinalProfile);
+    var positions = radarValuesToNodePositions(norm);
+    var base = state.baseProfile;
+    for (var j = 0; j < 5; j++) {
+      var node = document.getElementById('radarNode' + j);
+      if (node) {
+        node.setAttribute('cx', positions[j].cx);
+        node.setAttribute('cy', positions[j].cy);
+      }
+      var key = PROFILE_KEYS[j];
+      var valEl = document.getElementById('radarVal' + j);
+      if (valEl) {
+        var pv = currentFinalProfile[key];
+        valEl.textContent = (pv != null && !isNaN(Number(pv))) ? String(Math.round(Number(pv))) : '—';
+      }
+      var deltaEl = document.getElementById('radarDelta' + j);
+      if (deltaEl) {
+        if (base && base[key] != null) {
+          var delta = Math.round(currentFinalProfile[key] - base[key]);
+          deltaEl.textContent = delta === 0 ? '0' : (delta > 0 ? '▲ +' + delta : '▼ ' + delta);
+          deltaEl.className = 'delta ' + (delta >= 0 ? 'up' : 'down');
+        } else {
+          deltaEl.textContent = '—';
+          deltaEl.className = 'delta';
+        }
+      }
+    }
+    setRadarAxisExceeds();
+    var balance = computeStabilityIndexFromProfile(currentFinalProfile);
+    if (balance == null) balance = state.apiStabilityIndex;
+    var balanceEl = document.getElementById('radarBalance');
+    var barEl = document.getElementById('radarBalanceBar');
+    if (balanceEl) balanceEl.textContent = balance != null ? balance + '%' : '—';
+    if (barEl) {
+      barEl.style.width = (balance != null ? balance : 0) + '%';
+      barEl.classList.remove('stable', 'unstable');
+      barEl.classList.add(balance != null && balance >= 70 ? 'stable' : 'unstable');
+    }
+    if (!done) radarAnimId = requestAnimationFrame(updateRadarPolygon);
+    else radarAnimId = null;
+  }
+
+  function setRadarAxisHighlightFromFunction(bead) {
+    var axes = document.querySelectorAll('.radar-module .radar-axis');
+    for (var k = 0; k < axes.length; k++) axes[k].classList.remove('highlight');
+    if (!bead) return;
+    var C = beadFunctionContribution(bead);
+    var vals = PROFILE_KEYS.map(function(key) { return Number(C[key]) || 0; });
+    var max = Math.max.apply(null, vals.concat([0.0001]));
+    for (var i = 0; i < 5; i++) {
+      if (vals[i] >= max * 0.52 && axes[i]) axes[i].classList.add('highlight');
+    }
+  }
+
+  function updateRadar(bead) {
+    setRadarAxisHighlightFromFunction(bead);
+  }
+
+  function updateEnergyProfileFromStructure() {
+    updateRadarFromProfiles(null, getFinalProfile());
+  }
+
+  // ——— Deterministic config: same date → same 24 beads ———
+  /* Disabled: bracelet beads come from POST /bazi (data.beads). */
+  function getConfigurationForDate(dateStr) {
+    return [];
+  }
+
+  function getSummary(beads) {
+    return {
+      primary: '—', secondary: '—', balance: '—', configClass: '—', resonance: '—', stability: '—'
+    };
+  }
+
+  /** Short role label from prose (API has description only; optional raw.function when present). */
+  function deriveFunctionLabel(description) {
+    if (description == null || String(description).trim() === '') return '—';
+    var s = String(description).trim();
+    var first = s.split(/[.!?]/)[0].trim();
+    var words = first.split(/\s+/).filter(Boolean);
+    var n = Math.min(words.length, 4);
+    if (words.length <= 3) n = words.length;
+    var slice = words.slice(0, n);
+    var out = slice.map(function(w) {
+      return w.length ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '';
+    }).join(' ');
+    if (out.length > 44) out = out.slice(0, 41) + '…';
+    return out;
+  }
+
+  function getDisplayFunction(bead) {
+    if (!bead) return '—';
+    var d = bead.description != null ? String(bead.description).trim() : '';
+    var f = bead.function != null ? String(bead.function).trim() : '';
+    if (f && f !== d) return f;
+    return deriveFunctionLabel(bead.description);
+  }
+
+  /** Interpret normalized material density (deterministic per bead). */
+  function densityLabel(v) {
+    var n = Number(v);
+    if (isNaN(n)) return '';
+    if (n < 0.9) return 'Low Coherence';
+    if (n < 1.0) return 'Flexible';
+    if (Math.abs(n - 1.0) < 0.0005) return 'Balanced';
+    if (n < 1.1) return 'Structured';
+    return 'High Density';
+  }
+
+  /** Default texture file (beads_master + /beads/) when API omits image. */
+  var FALLBACK_BEAD_TEXTURE = 'amber.jpeg';
+
+  function makeFallbackBeadObject(slotIndex) {
+    return {
+      id: 'fallback_unit_' + slotIndex,
+      name: 'Reserved unit',
+      material: 'crystal',
+      element: 'Earth',
+      elementAlt: null,
+      function: 'STANDARD',
+      description: '',
+      tier: 'Common',
+      color: 'neutral',
+      level: 0,
+      colorHint: 'metal',
+      image: FALLBACK_BEAD_TEXTURE,
+      images: [FALLBACK_BEAD_TEXTURE],
+      glowColor: '#e6b800',
+      model: 'beads',
+      type: 'beads',
+      code: 'B' + String(slotIndex + 1).padStart(2, '0'),
+      index: slotIndex
+    };
+  }
+
+  /**
+   * Ensure exactly TOTAL_MAX_UNITS valid objects with at least one texture path.
+   * Does not change layout — only data passed to renderBeads / WebGL.
+   */
+  function normalizeBeadsForRendering(beads) {
+    var arr = Array.isArray(beads) ? beads.slice() : [];
+    arr = arr.filter(function(b) { return b != null && typeof b === 'object'; });
+    var i;
+    for (i = 0; i < arr.length; i++) {
+      var b = arr[i];
+      if (b.id == null || b.id === '') b.id = 'api-' + i;
+      if (b.name == null || b.name === '') b.name = String(b.id);
+      if (b.material == null || b.material === '') b.material = 'crystal';
+      if (b.element == null || b.element === '') b.element = 'Metal';
+      if (b.model != null && String(b.model).trim() === '') b.model = null;
+      if (!beadImageCandidates(b).length) {
+        console.warn('[FVTH beads] missing image/model path at index', i, 'id=', b.id, '→ fallback', FALLBACK_BEAD_TEXTURE);
+        b.image = FALLBACK_BEAD_TEXTURE;
+        b.images = [FALLBACK_BEAD_TEXTURE];
+      }
+    }
+    while (arr.length < TOTAL_MAX_UNITS) {
+      var idx = arr.length;
+      console.warn('[FVTH beads] padding slot', idx, '/', TOTAL_MAX_UNITS, '→ fallback bead');
+      arr.push(makeFallbackBeadObject(idx));
+    }
+    if (arr.length > TOTAL_MAX_UNITS) {
+      console.warn('[FVTH beads] truncating', arr.length - TOTAL_MAX_UNITS, 'extra beads →', TOTAL_MAX_UNITS);
+      arr = arr.slice(0, TOTAL_MAX_UNITS);
+    }
+    for (i = 0; i < arr.length; i++) {
+      arr[i].code = 'B' + String(i + 1).padStart(2, '0');
+      arr[i].index = i;
+    }
+    return arr;
+  }
+
+  /** Map POST /bazi beads[] → UI model (ids, images, function from beads_master.csv via API). */
+  function mapApiBeads(apiBeads) {
+    if (!apiBeads || !apiBeads.length) return [];
+    var out = [];
+    for (var i = 0; i < apiBeads.length; i++) {
+      var raw = apiBeads[i];
+      if (raw == null || typeof raw !== 'object') {
+        console.warn('[FVTH beads] mapApiBeads: non-object at index', i, raw);
+        continue;
+      }
+      var elKey = String(raw.element || 'metal').toLowerCase();
+      var desc = raw.description != null ? String(raw.description) : '';
+      var fnRaw = raw.function != null ? String(raw.function).trim() : '';
+      var fn = fnRaw !== '' ? fnRaw : deriveFunctionLabel(desc);
+      var imgs = Array.isArray(raw.images) && raw.images.length ? raw.images.slice() : [];
+      if (!imgs.length && raw.image) {
+        imgs = String(raw.image).split('|').map(function(p) { return p.trim(); }).filter(Boolean);
+      }
+      var firstImg = imgs.length ? imgs[0] : (raw.image || '');
+      if (!String(firstImg || '').trim() && !imgs.length) {
+        firstImg = FALLBACK_BEAD_TEXTURE;
+        imgs = [FALLBACK_BEAD_TEXTURE];
+      }
+      out.push({
+        id: raw.id || ('api-' + i),
+        name: raw.name != null && raw.name !== '' ? raw.name : String(raw.id || ('unit-' + i)),
+        material: raw.material != null && raw.material !== '' ? raw.material : 'crystal',
+        element: raw.element != null && raw.element !== '' ? raw.element : 'Metal',
+        elementAlt: raw.elementAlt != null && raw.elementAlt !== '' ? raw.elementAlt : null,
+        function: fn,
+        description: desc,
+        tier: raw.rarity ? (String(raw.rarity).charAt(0).toUpperCase() + String(raw.rarity).slice(1).toLowerCase()) : '—',
+        color: raw.color,
+        level: raw.level != null && raw.level !== '' ? Number(raw.level) : 0,
+        colorHint: elKey,
+        image: firstImg,
+        images: imgs,
+        glowColor: raw.glowColor || '',
+        model: raw.model != null && String(raw.model).trim() ? String(raw.model).trim() : null,
+        type: raw.type != null && String(raw.type).trim() ? String(raw.type).trim() : (raw.model != null && String(raw.model).trim() ? String(raw.model).trim() : null),
+        code: 'B' + String(i + 1).padStart(2, '0'),
+        index: i
+      });
+    }
+    return out;
+  }
+
+  function buildSummaryFromApi(data) {
+    var an = data.analysis || {};
+    var bias = an.element_bias || '';
+    var parts = bias.split(/\s*\/\s*/);
+    function capToken(s) {
+      if (!s) return '—';
+      s = String(s).trim();
+      return s.length ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : '—';
+    }
+    var resLabel = an.resonance_class || '—';
+    var stab = an.stability_index;
+    return {
+      primary: capToken(parts[0] || ''),
+      secondary: capToken(parts[1] || ''),
+      balance: resLabel,
+      configClass: data.strength ? (String(data.strength).charAt(0).toUpperCase() + String(data.strength).slice(1)) : '—',
+      resonance: resLabel,
+      stability: stab != null && !isNaN(Number(stab)) ? (Number(stab) + '%') : '—'
+    };
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeHtmlAttr(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;');
+  }
+
+  /**
+   * Single bead DOM shell (.bead → .bead-face + optional code). No per-bead canvas — field WebGL is one canvas on #beadField.
+   * @param {object} bead
+   * @param {number} index
+   * @param {{ analysis: boolean, pos: { x: number, y: number, ring?: number }, sizeClass: string, qty: number }} o
+   * @returns {HTMLElement}
+   */
+  function createBeadElement(bead, index, o) {
+    var analysis = o.analysis;
+    var pos = o.pos;
+    var sizeClass = o.sizeClass;
+    var qty = o.qty;
+    var el = document.createElement('div');
+    el.className = 'bead ' + sizeClass + ' ' + getGlowClass(qty);
+    if (analysis) el.classList.add('readonly');
+    el.setAttribute('data-index', index);
+    el.setAttribute('data-element', beadElementKey(bead));
+    el.setAttribute('data-tier', bead.tier || '');
+    el.setAttribute('data-function', beadFunctionKey(bead));
+    el.setAttribute('data-ring', pos.ring != null ? pos.ring : (index < 8 ? 0 : 1));
+    el.setAttribute('data-qty', qty);
+    el.setAttribute('aria-label', bead.name);
+    el.style.left = pos.x + '%';
+    el.style.top = pos.y + '%';
+    var codeHtml = (!analysis && bead.code)
+      ? '<div class="bead-code">' + escapeHtml(bead.code) + '</div>'
+      : '';
+    el.innerHTML = '<div class="bead-face">' + codeHtml + '</div>';
+    el.addEventListener('mouseenter', function() {
+      onBeadMouseEnter(index);
+    });
+    el.addEventListener('mouseleave', function() {
+      onBeadMouseLeave();
+    });
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (state.mode === 'analysis') return;
+      if (e.button === 0) addBeadToBracelet(index);
+    });
+    return el;
+  }
+
+  /** Order beads using server allocation (slot counts), then element, then API order. */
+  function applyAllocationSort(beads, allocation) {
+    if (!beads.length) return [];
+    if (!allocation) return beads.slice();
+    var wrapped = beads.map(function(b, origIdx) {
+      return { b: b, origIdx: origIdx };
+    });
+    wrapped.sort(function(a, b) {
+      var ka = (a.b.colorHint || 'metal').toLowerCase();
+      var kb = (b.b.colorHint || 'metal').toLowerCase();
+      var ca = allocation[ka] != null ? allocation[ka] : 0;
+      var cb = allocation[kb] != null ? allocation[kb] : 0;
+      if (cb !== ca) return cb - ca;
+      if (ka !== kb) return ka < kb ? -1 : (ka > kb ? 1 : 0);
+      return a.origIdx - b.origIdx;
+    });
+    var out = [];
+    for (var i = 0; i < wrapped.length; i++) {
+      var bead = wrapped[i].b;
+      bead.code = 'B' + String(i + 1).padStart(2, '0');
+      bead.index = i;
+      out.push(bead);
+    }
+    return out;
+  }
+
+  // ——— System metadata: deterministic from bead id (no RNG) ———
+  function getBeadMetadata(bead, dateStr) {
+    var h = hashStr((dateStr || '') + (bead.id || '') + (bead.code || '')) >>> 0;
+    return {
+      signal: SIGNAL_LEVELS[h % SIGNAL_LEVELS.length],
+      resonance: RESONANCE_PHASES[(h >> 4) % RESONANCE_PHASES.length],
+      alignment: ALIGNMENT_LEVELS[(h >> 8) % ALIGNMENT_LEVELS.length],
+      density: DENSITY_INDEX[(h >> 12) % DENSITY_INDEX.length]
+    };
+  }
+
+  // ——— Radial layout: deterministic ring positions (allocation order via stable sort) ———
+  function getRadialPositionsForBeads(beads, dateStr) {
+    var n = beads.length;
+    var indices = beads.map(function(_, i) { return i; });
+    indices.sort(function(a, b) {
+      var ea = (beads[a].element || '') + (beads[a].tier || '');
+      var eb = (beads[b].element || '') + (beads[b].tier || '');
+      if (ea !== eb) return ea < eb ? -1 : 1;
+      return a - b;
+    });
+    var positions = [];
+    var innerR = 28;
+    var outerR = 42;
+    var innerCount = Math.min(8, n);
+    for (var i = 0; i < innerCount; i++) {
+      var a = (i / Math.max(innerCount, 1)) * Math.PI * 2 - Math.PI / 2;
+      positions.push({ x: 50 + innerR * Math.cos(a), y: 50 + innerR * Math.sin(a), ring: 0 });
+    }
+    var outerCount = Math.max(0, n - innerCount);
+    for (var j = 0; j < outerCount; j++) {
+      var a2 = (j / Math.max(outerCount, 1)) * Math.PI * 2 - Math.PI / 2;
+      positions.push({ x: 50 + outerR * Math.cos(a2), y: 50 + outerR * Math.sin(a2), ring: 1 });
+    }
+    var out = [];
+    for (var k = 0; k < n; k++) out.push(null);
+    for (var idx = 0; idx < n; idx++) {
+      out[indices[idx]] = positions[idx];
+    }
+    return out;
+  }
+
+  var radialPositions = null; // Set per-config from getRadialPositionsForBeads
+  var TOTAL_MAX_UNITS = 24;
+
+  var state = {
+    beads: null,
+    summary: null,
+    apiUi: null,
+    apiAllocation: null,
+    radialPositions: null,
+    selectedIndex: -1,
+    hoverIndex: -1,
+    dateStr: '',
+    cursorX: 0, cursorY: 0, cursorInField: false,
+    beadOffsets: [],
+    beadTargets: [],
+    animId: null,
+    unitQuantities: {},  // legacy; bracelet uses selected[]
+    stage: 'match',   // "match" | "assembly" | "preview"
+    mode: 'analysis', // "analysis" (read-only map) | "assembly" (interactive)
+    selected: [],    // { fieldIndex, bead }[] — bracelet build (max 24)
+    baseProfile: null,   // from API data.profile only
+    apiStabilityIndex: null,  // backend compute_stability → STRUCTURE BALANCE bar
+    bracelet3dInstance: null,
+    beadField3dInstances: [],
+    assemblyBracelet3dInstances: [],
+    deployShareCode: null
+  };
+
+  function getTotalUnits() {
+    return state.selected.length;
+  }
+
+  function getGlowClass(qty) {
+    if (qty <= 0) return 'qty-0';
+    if (qty <= 3) return 'qty-1-3';
+    if (qty <= 6) return 'qty-4-6';
+    if (qty <= 9) return 'qty-7-9';
+    return 'qty-10-12';
+  }
+
+  /** Unit map read-only vs assembly: toggles #resultSection mode classes (bead codes, qty UI). */
+  function applyModeToUI() {
+    var section = document.getElementById('resultSection');
+    var wrap = document.getElementById('assemblyBraceletWrap');
+    var beadField = document.getElementById('beadField');
+    if (section) {
+      section.classList.toggle('mode-analysis', state.mode === 'analysis');
+      section.classList.toggle('mode-assembly', state.mode === 'assembly');
+    }
+    if (beadField) beadField.classList.toggle('energy-ring', state.mode === 'analysis');
+    if (wrap) wrap.style.display = state.mode === 'assembly' ? 'block' : 'none';
+    if (state.mode !== 'assembly') {
+      var ar = document.getElementById('assemblyBraceletRing');
+      if (ar) {
+        disposeAssemblyBracelet3d();
+        ar.innerHTML = '';
+        ar.className = 'assembly-bracelet-ring';
+      }
+    }
+  }
+
+  function countSelectedForFieldIndex(fieldIndex) {
+    var n = 0;
+    for (var i = 0; i < state.selected.length; i++) {
+      if (state.selected[i].fieldIndex === fieldIndex) n++;
+    }
+    return n;
+  }
+
+  /** Relative texture URL for bracelet Three.js preview (./beads/…). */
+  function braceletBeadImgUrl(bead, slotKey) {
+    if (!bead || !bead.image) return '';
+    return beadTextureUrlFor3d(bead, slotKey || 'bracelet-preview');
+  }
+
+  function disposeBracelet3dInstance(key) {
+    var inst = state[key];
+    if (inst) {
+      try {
+        inst.stop();
+        inst.dispose();
+      } catch (e) { /* ignore */ }
+      state[key] = null;
+    }
+  }
+
+  function disposeBracelet3dPreview() {
+    disposeBracelet3dInstance('bracelet3dInstance');
+  }
+
+  function mountBraceletWebGL(ringEl, className, stateKey, autoRotate) {
+    if (!ringEl) return;
+    disposeBracelet3dInstance(stateKey);
+    ringEl.innerHTML = '';
+    ringEl.className = className;
+    var n = state.selected.length;
+    if (n === 0) return;
+    var beadPayload = state.selected.map(function(s, idx) {
+      var tf = braceletBeadImgUrl(s.bead, 'br-' + idx);
+      if (!tf) {
+        tf = beadTextureUrlFor3d(
+          { image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE], id: '_fb' },
+          'br-fb-' + idx
+        );
+        if (!tf) tf = beadImageSrc({ image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE] });
+      }
+      return {
+        textureFile: tf,
+        glowHex: s.bead.glowColor || '#e6b800',
+        beadId: s.bead.id,
+        modelType: s.bead.model || s.bead.type || null
+      };
+    });
+    import('./bead_3d_runtime.js')
+      .then(function(mod) {
+        return mod.createBracelet3D(ringEl, beadPayload, {
+          autoRotate: autoRotate,
+          orbitControls: true
+        });
+      })
+      .then(function(inst) {
+        state[stateKey] = inst;
+        inst.start();
+      })
+      .catch(function(e) {
+        console.warn('Bracelet 3D:', e);
+        ringEl.innerHTML = '';
+      });
+  }
+
+  var assemblyBracelet3dGen = 0;
+
+  function disposeAssemblyBracelet3d() {
+    assemblyBracelet3dGen++;
+    (state.assemblyBracelet3dInstances || []).forEach(function(inst) {
+      try {
+        if (inst.stop) inst.stop();
+        if (inst.dispose) inst.dispose();
+      } catch (e) { /* ignore */ }
+    });
+    state.assemblyBracelet3dInstances = [];
+    import('./match_bead_field_engine.js').then(function(mod) {
+      mod.disposeAssemblyRingEngine();
+    }).catch(function() { /* ignore */ });
+  }
+
+  function scheduleAssemblyBracelet3D() {
+    var gen = assemblyBracelet3dGen;
+    var sel = state.selected;
+    if (!sel || !sel.length) return;
+    import('./bead_3d_runtime.js').then(function(mod) {
+      return mod.loadBeadTable().then(function(table) {
+        var beadsOnly = sel.map(function(e) { return e.bead; });
+        applyBeadModelFromCsvTable(beadsOnly, table);
+      }).then(function() {
+        return import('./match_bead_field_engine.js').then(function(eng) {
+          return eng.syncAssemblyRingBeads(sel, gen, {
+            getGen: function() {
+              return assemblyBracelet3dGen;
+            },
+            textureUrlFor: function(b, key) {
+              var url = beadTextureUrlFor3d(b, key);
+              if (!url) {
+                url = beadTextureUrlFor3d(
+                  { image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE], id: '_fb' },
+                  'asmf-' + key
+                );
+                if (!url) url = beadImageSrc({ image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE] });
+              }
+              return url;
+            },
+            glowHexFor: function(b) {
+              return (b.glowColor && String(b.glowColor).trim()) || '#e6b800';
+            }
+          });
+        });
+      });
+    }).catch(function(e) {
+      console.warn('Assembly bracelet 3D:', e);
+    });
+  }
+
+  /** BRACELET BUILD sidebar: one WebGL canvas on #assemblyBraceletRing (match_bead_field_engine.js). */
+  function renderAssemblyBraceletMini() {
+    var ring = document.getElementById('assemblyBraceletRing');
+    if (!ring) return;
+    disposeAssemblyBracelet3d();
+    ring.innerHTML = '';
+    ring.className = 'assembly-bracelet-ring';
+    var beads = state.selected;
+    var n = beads.length;
+    if (n === 0) return;
+    scheduleAssemblyBracelet3D();
+  }
+
+  function renderBraceletPreview() {
+    var ring = document.getElementById('braceletRing');
+    state.deployShareCode = generateShareCode();
+    mountBraceletWebGL(ring, 'bracelet-ring', 'bracelet3dInstance', true);
+    var codeEl = document.getElementById('braceletConfigCode');
+    if (codeEl) codeEl.innerHTML = 'FVTH CONFIG<br><strong>' + state.deployShareCode + '</strong>';
+  }
+
+  function generateConfigId() {
+    var chars = '0123456789ABCDEF';
+    var h = function(s) { return (hashStr(s) >>> 0); };
+    var seed = h(state.dateStr + JSON.stringify(state.selected));
+    var rng = mulberry32(seed);
+    var part = '';
+    for (var i = 0; i < 5; i++) part += chars[Math.floor(rng() * 16)];
+    return 'FVTH-' + part;
+  }
+
+  function generateShareCode() {
+    var chars = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    var h = function(s) { return (hashStr(s) >>> 0); };
+    var seed = h(state.dateStr + JSON.stringify(state.selected) + 'share');
+    var rng = mulberry32(seed);
+    var a = '', b = '';
+    for (var i = 0; i < 4; i++) a += chars[Math.floor(rng() * chars.length)];
+    for (var j = 0; j < 3; j++) b += chars[Math.floor(rng() * chars.length)];
+    return 'FVTH-' + a + '-' + b;
+  }
+
+  function pickDeployVideoMime() {
+    var candidates = [
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    for (var ci = 0; ci < candidates.length; ci++) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(candidates[ci])) {
+        return candidates[ci];
+      }
+    }
+    return '';
+  }
+
+  function canvasRoundRectPath(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function blobToArrayBuffer(b) {
+    if (b.arrayBuffer) return b.arrayBuffer();
+    return new Promise(function(resolve, reject) {
+      var r = new FileReader();
+      r.onload = function() { resolve(r.result); };
+      r.onerror = reject;
+      r.readAsArrayBuffer(b);
+    });
+  }
+
+  /**
+   * Lower half of deploy card: large energy profile (radar + values + balance), aligned with on-page radar logic.
+   */
+  function drawDeployEnergyPanelLower(ctx, dx, dy, dw, dh) {
+    var birth = state.baseProfile;
+    var structProf = getFinalProfile();
+    var normB = profileToNormalizedValues(birth);
+    var normS = profileToNormalizedValues(structProf);
+    ctx.save();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dx + 20, dy + 0.5);
+    ctx.lineTo(dx + dw - 20, dy + 0.5);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#b4b4bc';
+    ctx.font = '600 22px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.letterSpacing = '0.22em';
+    ctx.fillText('ENERGY PROFILE ANALYSIS', dx + dw / 2, dy + 42);
+    ctx.letterSpacing = '0';
+
+    ctx.font = '500 13px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.fillStyle = 'rgba(180, 180, 188, 0.85)';
+    ctx.fillText('● Birth profile    ○ Structure profile', dx + dw / 2, dy + 68);
+
+    var reservedBelowRadar = Math.min(320, dh * 0.42);
+    var R = Math.min(dw * 0.34, (dh - reservedBelowRadar - 100) * 0.42, 168);
+    R = Math.max(R, 95);
+    var cx = dx + dw / 2;
+    var cy = dy + 86 + R;
+
+    var rings = [0.25, 0.5, 0.75, 1];
+    var ri;
+    for (ri = 0; ri < rings.length; ri++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * rings[ri], 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    var ai;
+    for (ai = 0; ai < 5; ai++) {
+      var ax = RADAR_ANGLES[ai];
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R * Math.cos(ax), cy - R * Math.sin(ax));
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.stroke();
+    }
+
+    function polyPath(norm) {
+      ctx.beginPath();
+      for (var i = 0; i < 5; i++) {
+        var v = norm[i];
+        var rr = R * v;
+        var a = RADAR_ANGLES[i];
+        var px = cx + rr * Math.cos(a);
+        var py = cy - rr * Math.sin(a);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+    }
+
+    polyPath(normB);
+    ctx.fillStyle = 'rgba(90, 150, 255, 0.28)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(130, 185, 255, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    polyPath(normS);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.11)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(248, 248, 252, 0.82)';
+    ctx.lineWidth = 2.25;
+    ctx.stroke();
+
+    var labels = ['Fire', 'Earth', 'Metal', 'Water', 'Wood'];
+    ctx.font = '600 13px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#d0d0d8';
+    for (ai = 0; ai < 5; ai++) {
+      var a2 = RADAR_ANGLES[ai];
+      var lx = cx + (R + 22) * Math.cos(a2);
+      var ly = cy - (R + 22) * Math.sin(a2);
+      ctx.fillText(labels[ai], lx, ly + 4);
+    }
+
+    var tableTop = cy + R + 62;
+    var colName = dx + dw * 0.14;
+    var colVal = dx + dw * 0.52;
+    var colDelta = dx + dw * 0.72;
+    ctx.textAlign = 'left';
+    ctx.font = '600 11px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.fillStyle = 'rgba(150, 150, 158, 0.95)';
+    ctx.fillText('ELEMENT', colName, tableTop);
+    ctx.fillText('STRUCTURE', colVal, tableTop);
+    ctx.textAlign = 'right';
+    ctx.fillText('Δ vs BIRTH', colDelta + dw * 0.22, tableTop);
+
+    var rowY = tableTop + 28;
+    var rowH = 30;
+    for (ai = 0; ai < 5; ai++) {
+      var key = PROFILE_KEYS[ai];
+      var sv = structProf[key] != null ? Math.round(Number(structProf[key])) : null;
+      var bv = birth && birth[key] != null ? Math.round(Number(birth[key])) : null;
+      var delta = sv != null && bv != null ? sv - bv : null;
+      var y = rowY + ai * rowH;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#e8e8ee';
+      ctx.font = '500 17px "SF Mono", ui-monospace, Consolas, monospace';
+      ctx.fillText(labels[ai], colName, y);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '600 18px "SF Mono", ui-monospace, Consolas, monospace';
+      ctx.fillText(sv != null && !isNaN(sv) ? String(sv) + '%' : '—', colVal, y);
+      ctx.textAlign = 'right';
+      if (delta != null && !isNaN(delta)) {
+        ctx.fillStyle = delta > 0 ? '#7dccb0' : delta < 0 ? '#c99ab5' : '#a8a8b0';
+        var dtxt = delta === 0 ? '0' : (delta > 0 ? '+' + delta : String(delta));
+        ctx.fillText(dtxt, colDelta + dw * 0.22, y);
+      } else {
+        ctx.fillStyle = '#7a7a82';
+        ctx.fillText('—', colDelta + dw * 0.22, y);
+      }
+    }
+
+    var bal = computeStabilityIndexFromProfile(structProf);
+    if (bal == null) bal = state.apiStabilityIndex;
+    var barY = dy + dh - 52;
+    var barX = colName;
+    var barW = dw - (colName - dx) * 2;
+    var barH = 10;
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#c8c8d0';
+    ctx.font = '600 14px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.fillText('STRUCTURE BALANCE', barX, barY - 6);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#f0f0f4';
+    ctx.font = '600 16px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.fillText(bal != null ? bal + '%' : '—', barX + barW, barY - 6);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    canvasRoundRectPath(ctx, barX, barY, barW, barH, 4);
+    ctx.fill();
+    var fillW = bal != null ? Math.max(0, Math.min(100, bal)) / 100 * barW : 0;
+    var barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+    barGrad.addColorStop(0, bal != null && bal >= 70 ? 'rgba(110, 190, 155, 0.95)' : 'rgba(200, 160, 120, 0.92)');
+    barGrad.addColorStop(1, bal != null && bal >= 70 ? 'rgba(140, 220, 185, 0.9)' : 'rgba(230, 140, 110, 0.88)');
+    ctx.fillStyle = barGrad;
+    if (fillW > 0) {
+      canvasRoundRectPath(ctx, barX, barY, fillW, barH, 4);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /** 9:16 deploy frame: full-black canvas; inset rounded frame (stroke only) = layout zone; upper = config + 3D, lower = energy profile. */
+  function drawDeployPosterFrame(ctx, W, H, inset, glCanvas, shareCode) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+
+    var px = inset;
+    var py = inset;
+    var pw = W - 2 * inset;
+    var ph = H - 2 * inset;
+    var midY = py + ph * 0.5;
+
+    canvasRoundRectPath(ctx, px, py, pw, ph, 18);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 28, midY);
+    ctx.lineTo(px + pw - 28, midY);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(154, 154, 164, 0.95)';
+    ctx.font = '600 15px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.letterSpacing = '0.28em';
+    ctx.fillText('CONFIGURATION', W / 2, py + 44);
+    ctx.letterSpacing = '0';
+    ctx.fillStyle = '#ececf0';
+    ctx.font = '600 26px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.fillText('FVTH CONFIG', W / 2, py + 82);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 38px "SF Mono", ui-monospace, Consolas, monospace';
+    ctx.letterSpacing = '0.06em';
+    ctx.fillText(shareCode, W / 2, py + 128);
+    ctx.letterSpacing = '0';
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px + 40, py + 148);
+    ctx.lineTo(px + pw - 40, py + 148);
+    ctx.stroke();
+
+    var padX = 40;
+    var topBlockBottom = midY - 20;
+    var top3d = py + 158;
+    var maxH = topBlockBottom - top3d;
+    var maxW = pw - padX * 2;
+    var w3 = Math.min(maxW, maxH, 820);
+    var h3 = w3;
+    var x3 = px + (pw - w3) / 2;
+    if (glCanvas && glCanvas.width) {
+      ctx.save();
+      canvasRoundRectPath(ctx, x3, top3d, w3, h3, 12);
+      ctx.clip();
+      ctx.drawImage(glCanvas, x3, top3d, w3, h3);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+      ctx.lineWidth = 1.25;
+      canvasRoundRectPath(ctx, x3, top3d, w3, h3, 12);
+      ctx.stroke();
+    }
+
+    var lowerPadX = 32;
+    var lowerPadTop = 8;
+    var lowerPadBottom = 36;
+    drawDeployEnergyPanelLower(
+      ctx,
+      px + lowerPadX,
+      midY + lowerPadTop,
+      pw - lowerPadX * 2,
+      py + ph - (midY + lowerPadTop) - lowerPadBottom
+    );
+  }
+
+  function openDeployResultWindow(blob, shareCode, mime) {
+    var baseName = String(shareCode || 'FVTH').replace(/[^\w-]+/g, '') + '-structure.webm';
+    var w = window.open('', '_blank');
+    if (!w) {
+      alert('Pop-up blocked. Allow pop-ups for this site, then try DEPLOY STRUCTURE again.');
+      return;
+    }
+
+    var safeCode = String(shareCode || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    var html = [
+      '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">',
+      '<meta name="viewport" content="width=device-width,initial-scale=1">',
+      '<title>FVTH — Deploy</title><style>',
+      'body{margin:0;background:#070708;color:#eaeaea;font-family:system-ui,-apple-system,sans-serif;',
+      'display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 16px 36px;}',
+      'h1{font-size:0.82rem;letter-spacing:0.18em;font-weight:600;margin:0 0 8px;color:#8e8e95;}',
+      '.code{font-family:ui-monospace,monospace;font-size:1.08rem;color:#fff;margin-bottom:20px;text-align:center;}',
+      '.vid-wrap{max-width:min(400px,96vw);border-radius:14px;overflow:hidden;',
+      'box-shadow:0 16px 48px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);}',
+      'video{width:100%;height:auto;display:block;background:#000;}',
+      '.actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:24px;}',
+      'button{font-family:ui-monospace,monospace;font-size:0.68rem;letter-spacing:0.12em;padding:14px 22px;',
+      'cursor:pointer;border:1px solid rgba(255,255,255,.28);background:#18181d;color:#f4f4f6;border-radius:3px;}',
+      'button:hover{border-color:#d0d0d8;color:#fff;}',
+      '.hint{max-width:460px;font-size:0.74rem;line-height:1.55;color:#7e7e86;margin-top:22px;text-align:center;}',
+      '</style></head><body>',
+      '<h1>STRUCTURE EXPORT</h1>',
+      '<div class="code">', safeCode, '</div>',
+      '<div class="vid-wrap"><video id="fvthDeployVideo" playsinline controls loop muted preload="auto"></video></div>',
+      '<div class="actions">',
+      '<button type="button" id="fvthBtnSave">SAVE YOUR STRUCTURE</button>',
+      '<button type="button" id="fvthBtnShare">SHARE YOUR STRUCTURE</button>',
+      '</div>',
+      '<p class="hint">9:16 looping video (1080×1920). Save or Share — on supported phones Share opens the system sheet (Instagram, etc.). Otherwise save and upload from your gallery to Stories or Reels.</p>',
+      '<script>',
+      '(function(){var L=null;var U=null;var FN=', JSON.stringify(baseName), ';var MT=', JSON.stringify(mime || 'video/webm'), ';',
+      'window.addEventListener("message",function(ev){if(ev.source!==window.opener||!ev.data||ev.data.type!=="FVTH_DEPLOY")return;',
+      'try{L=new Blob([ev.data.buffer],{type:ev.data.mime||MT});U=URL.createObjectURL(L);',
+      'var v=document.getElementById("fvthDeployVideo");v.src=U;v.muted=true;v.play().catch(function(){});}catch(e){}});',
+      'function dl(){if(!U)return;var a=document.createElement("a");a.href=U;a.download=FN;a.click();}',
+      'document.getElementById("fvthBtnSave").onclick=function(){dl();};',
+      'document.getElementById("fvthBtnShare").onclick=function(){',
+      'if(!L){alert("Wait for the video to finish loading.");return;}',
+      'var f=new File([L],FN,{type:L.type||MT});',
+      'if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){',
+      'navigator.share({files:[f],title:"FVTH structure",text:"My FVTH configuration"}).catch(function(){dl();alert("Saved a copy — upload from your gallery to Instagram Stories or Reels.");});',
+      '}else{dl();alert("Video saved. Open Instagram (or another app) and upload this file from your photos or files.");}',
+      '};',
+      'if(window.opener)window.opener.postMessage({type:"FVTH_DEPLOY_CHILD_READY"},"*");',
+      '})();<\/script></body></html>'
+    ].join('');
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+
+    function onReady(ev) {
+      if (ev.source !== w || !ev.data || ev.data.type !== 'FVTH_DEPLOY_CHILD_READY') return;
+      window.removeEventListener('message', onReady);
+      blobToArrayBuffer(blob).then(function(buf) {
+        w.postMessage({ type: 'FVTH_DEPLOY', buffer: buf, mime: mime }, '*');
+      }).catch(function() {
+        alert('Could not transfer the export to the new window. Try again or use a newer browser.');
+      });
+    }
+    window.addEventListener('message', onReady);
+    setTimeout(function() { window.removeEventListener('message', onReady); }, 90000);
+  }
+
+  async function runDeployStructureExport() {
+    if (!state.selected || !state.selected.length) return;
+    var mime = pickDeployVideoMime();
+    if (!mime) {
+      alert('This browser cannot record WebM video. Try Chrome, Edge, or Firefox.');
+      return;
+    }
+
+    var shareCode = state.deployShareCode || generateShareCode();
+    var W = 1080;
+    var H = 1920;
+    var inset = 46;
+    var host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:fixed;left:-10000px;top:0;width:900px;height:900px;overflow:hidden;opacity:0.01;pointer-events:none;';
+    document.body.appendChild(host);
+
+    var beadPayload = state.selected.map(function(s, idx) {
+      var tf = braceletBeadImgUrl(s.bead, 'deploy-' + idx);
+      if (!tf) {
+        tf = beadTextureUrlFor3d(
+          { image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE], id: '_fb' },
+          'deploy-fb-' + idx
+        );
+        if (!tf) tf = beadImageSrc({ image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE] });
+      }
+      return {
+        textureFile: tf,
+        glowHex: s.bead.glowColor || '#e6b800',
+        beadId: s.bead.id,
+        modelType: s.bead.model || s.bead.type || null
+      };
+    });
+
+    var inst = null;
+    try {
+      var mod = await import('./bead_3d_runtime.js');
+      inst = await mod.createBracelet3D(host, beadPayload, {
+        exportMode: true,
+        autoRotate: false,
+        pixelRatio: 1
+      });
+
+      var canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      var ctx = canvas.getContext('2d');
+      var glCanvas = inst.renderer.domElement;
+
+      var totalFrames = 48;
+      var fps = 12;
+      var stream = canvas.captureStream(fps);
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5800000 });
+      var chunks = [];
+      rec.ondataavailable = function(e) {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+
+      var blob = await new Promise(function(resolve, reject) {
+        rec.onstop = function() {
+          try {
+            resolve(new Blob(chunks, { type: mime }));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        rec.onerror = function(ev) {
+          reject(ev.error || new Error('MediaRecorder error'));
+        };
+        rec.start(200);
+        var frame = 0;
+        function tickFrame() {
+          if (frame >= totalFrames) {
+            rec.stop();
+            return;
+          }
+          var tSec = frame / fps;
+          inst.renderFrameAt(tSec);
+          drawDeployPosterFrame(ctx, W, H, inset, glCanvas, shareCode);
+          frame++;
+          setTimeout(tickFrame, 1000 / fps);
+        }
+        tickFrame();
+      });
+
+      openDeployResultWindow(blob, shareCode, mime);
+    } catch (err) {
+      console.error(err);
+      alert('Export failed: ' + (err && err.message ? err.message : String(err)));
+    } finally {
+      if (inst) {
+        try { inst.dispose(); } catch (e2) { /* ignore */ }
+      }
+      if (host.parentNode) host.parentNode.removeChild(host);
+    }
+  }
+
+  /** Build radar profile from API data.profile (rounded display %). */
+  function apiProfileToDisplay(profileObj) {
+    if (!profileObj) return null;
+    var profile = {};
+    for (var pi = 0; pi < PROFILE_KEYS.length; pi++) {
+      var key = PROFILE_KEYS[pi];
+      var n = profileObj[key] != null ? Number(profileObj[key]) : 0;
+      profile[key] = isNaN(n) ? 0 : Math.round(n);
+    }
+    return profile;
+  }
+
+  function applyProfileToRadar(profileObj) {
+    var profile = apiProfileToDisplay(profileObj);
+    if (!profile) return;
+    state.baseProfile = profile;
+    updateBirthRadarPolygon();
+    var struct = getFinalProfile();
+    PROFILE_KEYS.forEach(function(k) {
+      currentFinalProfile[k] = Number(profile[k]) || 0;
+    });
+    targetFinalProfile = {
+      fire: struct.fire,
+      earth: struct.earth,
+      metal: struct.metal,
+      water: struct.water,
+      wood: struct.wood
+    };
+    if (!radarAnimId) radarAnimId = requestAnimationFrame(updateRadarPolygon);
+    updateRadarValues(struct);
+  }
+
+  function updateRadarValues(profile) {
+    var values = [
+      profile.fire,
+      profile.earth,
+      profile.metal,
+      profile.water,
+      profile.wood
+    ];
+    values.forEach(function(v, i) {
+      var el = document.getElementById('radarVal' + i);
+      if (el) el.textContent = (v != null && !isNaN(Number(v))) ? String(Math.round(Number(v))) : '—';
+    });
+    var balance = computeStabilityIndexFromProfile(profile);
+    if (balance == null) balance = state.apiStabilityIndex;
+    var balanceEl = document.getElementById('radarBalance');
+    if (balanceEl) balanceEl.textContent = balance != null ? balance + '%' : '—';
+    var bar = document.getElementById('radarBalanceBar');
+    if (bar) {
+      bar.style.width = (balance != null ? balance : 0) + '%';
+      bar.className = 'radar-balance-bar-fill ' + ((balance != null && balance > 70) ? 'stable' : 'unstable');
+    }
+  }
+
+  function applyStage() {
+    var section = document.getElementById('resultSection');
+    var preview = document.getElementById('braceletPreview');
+    var assemblyBlock = document.getElementById('assemblyBlock');
+    var btnGenBracelet = document.getElementById('btnGenerateBracelet');
+    var total = getTotalUnits();
+    if (!section) return;
+    section.classList.remove('stage-preview');
+    if (preview) preview.classList.remove('visible');
+    if (assemblyBlock) assemblyBlock.classList.remove('highlight');
+    if (btnGenBracelet) btnGenBracelet.style.display = 'none';
+    if (state.stage === 'assembly') {
+      if (assemblyBlock) assemblyBlock.classList.add('highlight');
+      if (btnGenBracelet && total > 0) btnGenBracelet.style.display = 'block';
+    } else if (state.stage === 'preview') {
+      section.classList.add('stage-preview');
+      if (preview) {
+        preview.classList.add('visible');
+        renderBraceletPreview();
+      }
+    } else {
+      disposeBracelet3dPreview();
+    }
+  }
+
+  function renderAssemblyList() {
+    var list = document.getElementById('assemblyList');
+    var countEl = document.getElementById('assemblyCount');
+    var summaryUnits = document.getElementById('summarySelectedUnits');
+    var btnProceed = document.getElementById('btnProceedAssembly');
+    var total = getTotalUnits();
+    if (countEl) countEl.textContent = 'BRACELET BEADS: ' + total + ' / ' + TOTAL_MAX_UNITS;
+    if (summaryUnits) summaryUnits.textContent = String(total);
+    if (btnProceed) {
+      btnProceed.style.display = state.mode === 'analysis' ? 'block' : 'none';
+      btnProceed.disabled = false;
+    }
+    if (!list) return;
+    list.innerHTML = '';
+    if (state.mode !== 'assembly') return;
+    for (var si = 0; si < state.selected.length; si++) {
+      var entry = state.selected[si];
+      var bead = entry.bead;
+      var li = document.createElement('li');
+      li.innerHTML = '<span class="unit-name">' + escapeHtml(bead.name || bead.id) + '</span><button type="button" class="assembly-remove" data-sel-index="' + si + '" aria-label="Remove">−</button>';
+      list.appendChild(li);
+      li.querySelector('.assembly-remove').addEventListener('click', function(ev) {
+        var idx = parseInt(ev.currentTarget.getAttribute('data-sel-index'), 10);
+        if (isNaN(idx) || idx < 0 || idx >= state.selected.length) return;
+        state.selected.splice(idx, 1);
+        renderAssemblyList();
+        updateBeadQuantityUI();
+        updateConfigStatus();
+        renderAssemblyBraceletMini();
+        updateRadarFromComposition();
+        applyStage();
+      });
+    }
+    var msg = document.getElementById('assemblyMsg');
+    if (msg) msg.textContent = '';
+  }
+
+  function getBraceletBeadsFromSelected() {
+    return state.selected.map(function(s) { return s.bead; });
+  }
+
+  function updateConfigStatus() {
+    var el = document.getElementById('configStatus');
+    if (el) el.textContent = getTotalUnits() + ' / ' + TOTAL_MAX_UNITS + ' UNITS';
+  }
+
+  function updateBeadQuantityUI() {
+    var field = getBeadFieldNodes();
+    if (!field || !state.beads) return;
+    state.beads.forEach(function(b, i) {
+      var node = field.querySelector('[data-index="' + i + '"]');
+      if (!node) return;
+      var qty = state.mode === 'assembly' ? countSelectedForFieldIndex(i) : 0;
+      node.setAttribute('data-qty', qty);
+      node.classList.remove('qty-0', 'qty-1-3', 'qty-4-6', 'qty-7-9', 'qty-10-12');
+      node.classList.add(getGlowClass(qty));
+    });
+  }
+
+  function updateRadarFromComposition() {
+    setRadarAxisHighlightFromFunction(null);
+    updateEnergyProfileFromStructure();
+  }
+
+  function resetRadarToNeutral() {
+    var neutral = emptyElementProfile();
+    currentFinalProfile = emptyElementProfile();
+    targetFinalProfile = emptyElementProfile();
+    var poly = document.getElementById('radarPolygon');
+    if (poly) poly.setAttribute('points', profileToPoints(neutral));
+    var norm = [0, 0, 0, 0, 0];
+    var positions = radarValuesToNodePositions(norm);
+    for (var j = 0; j < 5; j++) {
+      var node = document.getElementById('radarNode' + j);
+      if (node) { node.setAttribute('cx', positions[j].cx); node.setAttribute('cy', positions[j].cy); }
+      var valEl = document.getElementById('radarVal' + j);
+      if (valEl) valEl.textContent = '—';
+      var deltaEl = document.getElementById('radarDelta' + j);
+      if (deltaEl) { deltaEl.textContent = '—'; deltaEl.className = 'delta'; }
+    }
+    setRadarAxisExceeds();
+    var balanceEl = document.getElementById('radarBalance');
+    if (balanceEl) balanceEl.textContent = '—';
+    var barEl = document.getElementById('radarBalanceBar');
+    if (barEl) { barEl.style.width = '0%'; barEl.classList.remove('stable', 'unstable'); }
+  }
+
+  // ——— Full reset for regenerate: clear container, panel, diagnostics, state ———
+  function resetForReboot() {
+    state.selectedIndex = -1;
+    state.hoverIndex = -1;
+    state.unitQuantities = {};
+    state.mode = 'analysis';
+    state.selected = [];
+    state.baseProfile = null;
+    state.apiUi = null;
+    state.apiAllocation = null;
+    state.apiStabilityIndex = null;
+    disposeBracelet3dPreview();
+    disposeBeadField3d();
+    disposeAssemblyBracelet3d();
+    disposeBead3dHover();
+    var wrap = document.getElementById('beadFieldWrap');
+    var nodes = document.getElementById('beadFieldNodes');
+    var linesSvg = document.getElementById('beadLines');
+    var panelDefault = document.getElementById('panelDefault');
+    var panelDetail = document.getElementById('panelDetail');
+    var panelTitle = document.getElementById('panelTitle');
+    var btnClear = document.getElementById('btnClearSelection');
+    if (nodes) nodes.innerHTML = '';
+    else {
+      var f = document.getElementById('beadField');
+      if (f) f.innerHTML = '';
+    }
+    var cg = document.getElementById('centerGlow');
+    if (cg) cg.classList.remove('active');
+    if (linesSvg) linesSvg.innerHTML = '';
+    state.beadOffsets = [];
+    state.beadTargets = [];
+    for (var i = 0; i < 24; i++) {
+      state.beadOffsets.push({ x: 0, y: 0 });
+      state.beadTargets.push({ x: 0, y: 0 });
+    }
+    panelDefault.style.display = 'block';
+    panelDetail.classList.remove('active');
+    btnClear.style.display = 'none';
+    panelTitle.textContent = 'STRUCTURAL PROFILE';
+    var actionMsg = document.getElementById('panelActionMsg');
+    if (actionMsg) actionMsg.textContent = '';
+    var btnSave = document.getElementById('btnSaveUnit');
+    var btnAdd = document.getElementById('btnAddToSystem');
+    if (btnSave) btnSave.style.display = 'none';
+    if (btnAdd) btnAdd.style.display = 'none';
+    document.getElementById('resonance').textContent = '—';
+    document.getElementById('elementBias').textContent = '—';
+    document.getElementById('stability').textContent = '—';
+    document.getElementById('configStatus').textContent = 'Initializing…';
+    if (wrap) wrap.style.display = 'block';
+    updateBirthRadarPolygon();
+    resetRadarToNeutral();
+    var section = document.getElementById('resultSection');
+    if (section) section.classList.add('boot-phase');
+    var bootVisuals = document.getElementById('bootVisuals');
+    if (bootVisuals) bootVisuals.style.opacity = '1';
+    state.stage = 'match';
+    state.renderMode = 'assembly';
+    applyModeToUI();
+    applyStage();
+  }
+
+  // ——— Boot sequence ~1.5s with visual feedback, then callback ———
+  var BOOT_STAGES = [
+    { msg: 'Reading birth code…', status: 'Processing.', duration: 375 },
+    { msg: 'Mapping elemental bias…', status: 'Mapping.', duration: 375 },
+    { msg: 'Initializing active units…', status: 'Initializing.', duration: 375 },
+    { msg: 'Configuration locked.', status: 'Elemental bias locked.', duration: 375 }
+  ];
+
+  function runBootSequence(dateStr, callback) {
+    var statusEl = document.getElementById('configStatus');
+    var msgEl = document.getElementById('bootMessage');
+    var btnGen = document.getElementById('btnGenerate');
+    var btnReg = document.getElementById('btnRegenerate');
+    btnGen.disabled = true;
+    if (btnReg) btnReg.disabled = true;
+    msgEl.classList.add('visible');
+    var stage = 0;
+    function next() {
+      if (stage >= BOOT_STAGES.length) {
+        msgEl.classList.remove('visible');
+        msgEl.textContent = '';
+        statusEl.textContent = (state.apiUi && state.apiUi.config_status)
+          ? state.apiUi.config_status
+          : ('System boot complete. ' + (state.beads ? state.beads.length : 0) + ' active units detected.');
+        btnGen.disabled = false;
+        if (btnReg) btnReg.disabled = false;
+        var section = document.getElementById('resultSection');
+        if (section) section.classList.remove('boot-phase');
+        var bootVisuals = document.getElementById('bootVisuals');
+        if (bootVisuals) bootVisuals.style.opacity = '0';
+        updateBirthRadarPolygon();
+        updateRadarFromComposition();
+        callback();
+        return;
+      }
+      var s = BOOT_STAGES[stage];
+      msgEl.textContent = s.msg;
+      statusEl.textContent = s.status;
+      stage++;
+      setTimeout(next, s.duration);
+    }
+    next();
+  }
+
+  function addBeadToBracelet(fieldIndex) {
+    if (state.mode !== 'assembly' || !state.beads) return;
+    if (fieldIndex < 0 || fieldIndex >= state.beads.length) return;
+    if (state.selected.length >= TOTAL_MAX_UNITS) return;
+    var bead = state.beads[fieldIndex];
+    state.selected.push({ fieldIndex: fieldIndex, bead: bead });
+    setSelected(fieldIndex);
+    renderAssemblyList();
+    updateBeadQuantityUI();
+    renderAssemblyBraceletMini();
+    updateConfigStatus();
+    updateRadarFromComposition();
+    applyStage();
+  }
+
+  function changeBeadQuantity(index, delta) {
+    if (delta > 0) addBeadToBracelet(index);
+  }
+
+  var beadField3dGen = 0;
+
+  function disposeBeadField3d() {
+    beadField3dGen++;
+    var bf = document.getElementById('beadField');
+    if (bf) bf.classList.remove('fvth-webgl-field');
+    (state.beadField3dInstances || []).forEach(function(inst) {
+      try {
+        if (inst.stop) inst.stop();
+        if (inst.dispose) inst.dispose();
+      } catch (e) { /* ignore */ }
+    });
+    state.beadField3dInstances = [];
+    import('./match_bead_field_engine.js').then(function(mod) {
+      mod.disposeMatchBeadFieldEngine();
+    }).catch(function() { /* ignore */ });
+  }
+
+  function scheduleBeadField3D(beads) {
+    var gen = beadField3dGen;
+    if (!beads || !beads.length) return;
+    import('./bead_3d_runtime.js').then(function(mod) {
+      return mod.loadBeadTable().then(function(table) {
+        applyBeadModelFromCsvTable(beads, table);
+      }).then(function() {
+        return import('./match_bead_field_engine.js').then(function(eng) {
+          return eng.syncMatchBeadField(beads, state.radialPositions, gen, {
+            getGen: function() {
+              return beadField3dGen;
+            },
+            textureUrlFor: function(b, i) {
+              var url = beadTextureUrlFor3d(b, i);
+              if (!url) {
+                url = beadTextureUrlFor3d(
+                  { image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE], id: '_fb' },
+                  'f' + i
+                );
+                if (!url) url = beadImageSrc({ image: FALLBACK_BEAD_TEXTURE, images: [FALLBACK_BEAD_TEXTURE] });
+              }
+              return url;
+            },
+            glowHexFor: function(b) {
+              return (b.glowColor && String(b.glowColor).trim()) || '#e6b800';
+            }
+          });
+        });
+      }).then(function(syncedOk) {
+        if (gen !== beadField3dGen) return;
+        var bf = document.getElementById('beadField');
+        if (bf && syncedOk) bf.classList.add('fvth-webgl-field');
+        var field = getBeadFieldNodes();
+        if (!field) return;
+        field.querySelectorAll('.bead').forEach(function(el) {
+          el._fvthBead3d = {
+            start: function() {},
+            stop: function() {},
+            dispose: function() {},
+            sharedAnimationLoop: true
+          };
+        });
+      });
+    }).catch(function(e) {
+      console.warn('Bead field 3D:', e);
+    });
+  }
+
+  function renderBeads(beads) {
+    if (beads && beads.length) {
+      beads.forEach(function(b, i) {
+        if (b == null) {
+          console.warn('[FVTH beads] renderBeads: null/undefined bead at index', i);
+        }
+      });
+    }
+    applyModeToUI();
+    state.radialPositions = getRadialPositionsForBeads(beads, state.dateStr);
+    var empty = document.getElementById('emptyState');
+    var wrap = document.getElementById('beadFieldWrap');
+    var field = getBeadFieldNodes();
+    var linesSvg = document.getElementById('beadLines');
+    disposeBeadField3d();
+    disposeBead3dHover();
+    empty.style.display = 'none';
+    wrap.style.display = 'block';
+    field.innerHTML = '';
+    linesSvg.innerHTML = '';
+    var nLen = beads.length;
+    state.beadOffsets = [];
+    state.beadTargets = [];
+    for (var bi0 = 0; bi0 < nLen; bi0++) {
+      state.beadOffsets.push({ x: 0, y: 0 });
+      state.beadTargets.push({ x: 0, y: 0 });
+    }
+    var sizes = ['', 'size-m', 'size-l'];
+    var positions = state.radialPositions;
+    var analysis = state.mode === 'analysis';
+    beads.forEach(function(b, i) {
+      console.log(b.name, b.model);
+      var pos = positions[i];
+      if (!pos) return;
+      var sizeClass = sizes[i % 3];
+      var qty = analysis ? 0 : countSelectedForFieldIndex(i);
+      var el = createBeadElement(b, i, {
+        analysis: analysis,
+        pos: pos,
+        sizeClass: sizeClass,
+        qty: qty
+      });
+      field.appendChild(el);
+    });
+    updateBeadQuantityUI();
+    updateConnectionLinesSync();
+    var bf = document.getElementById('beadField');
+    if (bf) bf.classList.toggle('energy-ring', analysis);
+    var delayStep = 80;
+    beads.forEach(function(_, i) {
+      setTimeout(function() {
+        var node = field.querySelector('[data-index="' + i + '"]');
+        if (node) {
+          node.classList.add('visible');
+          node.setAttribute('data-activated', Date.now());
+          if (analysis) {
+            setTimeout(function() {
+              if (!node || state.mode !== 'analysis') return;
+              node.classList.add('orbiting');
+            }, 520);
+          }
+        }
+      }, i * delayStep);
+    });
+    if (state.mode === 'assembly' && !state.animId) startMagneticLoop();
+    scheduleBeadField3D(beads);
+  }
+
+  function setSelected(index) {
+    state.selectedIndex = index;
+    var panelTitle = document.getElementById('panelTitle');
+    var btnSave = document.getElementById('btnSaveUnit');
+    var btnAdd = document.getElementById('btnAddToSystem');
+    var actionMsg = document.getElementById('panelActionMsg');
+    if (index >= 0 && state.beads) {
+      showDetail(state.beads[index], true);
+      document.getElementById('panelDefault').style.display = 'none';
+      document.getElementById('panelDetail').classList.add('active');
+      document.getElementById('btnClearSelection').style.display = 'block';
+      if (panelTitle) panelTitle.textContent = 'UNIT LOCKED';
+      if (btnSave) btnSave.style.display = 'inline-block';
+      if (btnAdd) btnAdd.style.display = 'inline-block';
+    } else {
+      document.getElementById('panelDefault').style.display = 'block';
+      document.getElementById('panelDetail').classList.remove('active');
+      document.getElementById('btnClearSelection').style.display = 'none';
+      if (panelTitle) panelTitle.textContent = 'STRUCTURAL PROFILE';
+      if (btnSave) btnSave.style.display = 'none';
+      if (btnAdd) btnAdd.style.display = 'none';
+      if (actionMsg) actionMsg.textContent = '';
+    }
+    updateBeadStates();
+    updateConnectionLinesSync();
+    updateRadarFromProfiles(null, getFinalProfile());
+    if (index >= 0 && state.beads) updateRadar(state.beads[index]); else updateRadarFromComposition();
+  }
+
+  function updateBeadStates() {
+    var field = getBeadFieldNodes();
+    if (!field || !state.beads) return;
+    var sel = state.selectedIndex;
+    var nB = state.beads.length;
+    for (var i = 0; i < nB; i++) {
+      var el = field.querySelector('[data-index="' + i + '"]');
+      if (!el) continue;
+      el.classList.remove('selected');
+      if (i === sel) el.classList.add('selected');
+    }
+  }
+
+  function stripBeadFaceFx(face) {
+    if (!face) return;
+    face.classList.remove('resonance');
+    FX_GLOW_CLASSES.forEach(function(c) { face.classList.remove(c); });
+    face.style.boxShadow = '';
+  }
+
+  function activateBeadResonance(index) {
+    var cg = document.getElementById('centerGlow');
+    if (cg) cg.classList.add('active');
+    if (!state.beads || index < 0) return;
+    var fnKey = beadFunctionKey(state.beads[index]);
+    var centerEnt = getFunctionEntry(state.beads[index]);
+    var field = getBeadFieldNodes();
+    var all = field.querySelectorAll('.bead');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      var idx = parseInt(el.getAttribute('data-index'), 10);
+      var face = el.querySelector('.bead-face');
+      el.classList.remove('hover', 'related', 'dim');
+      stripBeadFaceFx(face);
+      if (idx === index) {
+        el.classList.add('hover');
+        if (face) {
+          face.classList.add('resonance', centerEnt.glowClass);
+        }
+      } else if (state.beads[idx] && beadFunctionKey(state.beads[idx]) === fnKey) {
+        el.classList.add('related');
+      } else {
+        el.classList.add('dim');
+      }
+    }
+    drawResonanceLinesStar(index);
+  }
+
+  function clearBeadResonance() {
+    var cg = document.getElementById('centerGlow');
+    if (cg) cg.classList.remove('active');
+    var field = getBeadFieldNodes();
+    field.querySelectorAll('.bead').forEach(function(el) {
+      el.classList.remove('hover', 'related', 'dim');
+      stripBeadFaceFx(el.querySelector('.bead-face'));
+    });
+    var linesSvg = document.getElementById('beadLines');
+    if (linesSvg) linesSvg.innerHTML = '';
+  }
+
+  function drawResonanceLinesStar(centerIndex) {
+    var linesSvg = document.getElementById('beadLines');
+    if (!linesSvg || !state.beads || !state.radialPositions) return;
+    var positions = state.radialPositions;
+    var cx = positions[centerIndex].x;
+    var cy = positions[centerIndex].y;
+    linesSvg.innerHTML = '';
+    for (var j = 0; j < state.beads.length; j++) {
+      if (j === centerIndex) continue;
+      var x2 = positions[j].x;
+      var y2 = positions[j].y;
+      var midX = (cx + x2) / 2;
+      var midY = (cy + y2) / 2;
+      var dx = x2 - cx;
+      var dy = y2 - cy;
+      var perpX = -dy * 0.15;
+      var perpY = dx * 0.15;
+      var cpx = midX + perpX;
+      var cpy = midY + perpY;
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M ' + cx + ' ' + cy + ' Q ' + cpx + ' ' + cpy + ' ' + x2 + ' ' + y2);
+      var same = beadFunctionKey(state.beads[j]) === beadFunctionKey(state.beads[centerIndex]);
+      path.setAttribute('class', same ? 'line-active visible' : 'line-dim visible');
+      linesSvg.appendChild(path);
+    }
+  }
+
+  function updateConnectionLinesSync() {
+    var linesSvg = document.getElementById('beadLines');
+    if (!linesSvg || !state.beads || !state.radialPositions) return;
+    if (state.hoverIndex >= 0) {
+      drawResonanceLinesStar(state.hoverIndex);
+      return;
+    }
+    linesSvg.innerHTML = '';
+    if (state.mode === 'analysis') return;
+    var centerIndex = state.selectedIndex;
+    if (centerIndex < 0) return;
+    var related = getRelatedIndices(centerIndex);
+    var positions = state.radialPositions;
+    var cx = positions[centerIndex].x;
+    var cy = positions[centerIndex].y;
+    for (var j = 0; j < related.length; j++) {
+      var r = related[j];
+      var x2 = positions[r].x;
+      var y2 = positions[r].y;
+      var midX = (cx + x2) / 2;
+      var midY = (cy + y2) / 2;
+      var dx = x2 - cx;
+      var dy = y2 - cy;
+      var perpX = -dy * 0.15;
+      var perpY = dx * 0.15;
+      var cpx = midX + perpX;
+      var cpy = midY + perpY;
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M ' + cx + ' ' + cy + ' Q ' + cpx + ' ' + cpy + ' ' + x2 + ' ' + y2);
+      path.setAttribute('stroke-dasharray', '0 200');
+      path.setAttribute('stroke-dashoffset', '0');
+      linesSvg.appendChild(path);
+      (function(p) {
+        requestAnimationFrame(function() {
+          p.setAttribute('class', 'line-active visible');
+          p.setAttribute('stroke-dasharray', '4 8');
+        });
+      })(path);
+    }
+  }
+
+  var bead3dCtx = null;
+
+  function disposeBead3dHover() {
+    if (
+      bead3dCtx &&
+      bead3dCtx.instance &&
+      typeof bead3dCtx.instance.stop === 'function' &&
+      !bead3dCtx.instance.sharedAnimationLoop
+    ) {
+      try {
+        bead3dCtx.instance.stop();
+      } catch (e) { /* ignore */ }
+    }
+    bead3dCtx = null;
+  }
+
+  function beginBead3dHover(index) {
+    var field = getBeadFieldNodes();
+    if (!field) return;
+    var el = field.querySelector('[data-index="' + index + '"]');
+    if (!el) return;
+    var inlineInst = el._fvthBead3d;
+    if (
+      inlineInst &&
+      typeof inlineInst.start === 'function' &&
+      !inlineInst.sharedAnimationLoop
+    ) {
+      inlineInst.start();
+      bead3dCtx = { instance: inlineInst };
+    }
+  }
+
+  function onBeadMouseEnter(index) {
+    if (!state.beads || index < 0) return;
+    beginBead3dHover(index);
+    state.hoverIndex = index;
+    showDetail(state.beads[index], false);
+    document.getElementById('panelDefault').style.display = 'none';
+    document.getElementById('panelDetail').classList.add('active');
+    document.getElementById('btnClearSelection').style.display = state.selectedIndex >= 0 ? 'block' : 'none';
+    var panelTitle = document.getElementById('panelTitle');
+    if (panelTitle) panelTitle.textContent = 'UNIT INSPECTION';
+    updateRadarFromProfiles(null, getProfileWithGhostBead(state.beads[index]));
+    activateBeadResonance(index);
+    updateBeadStates();
+    updateRadar(state.beads[index]);
+  }
+
+  function onBeadMouseLeave() {
+    disposeBead3dHover();
+    state.hoverIndex = -1;
+    clearBeadResonance();
+    var panelTitle = document.getElementById('panelTitle');
+    if (state.selectedIndex >= 0 && state.beads) {
+      showDetail(state.beads[state.selectedIndex], true);
+      document.getElementById('panelDefault').style.display = 'none';
+      document.getElementById('panelDetail').classList.add('active');
+      if (panelTitle) panelTitle.textContent = 'UNIT LOCKED';
+    } else {
+      hideDetail();
+      if (panelTitle) panelTitle.textContent = 'STRUCTURAL PROFILE';
+    }
+    updateBeadStates();
+    updateConnectionLinesSync();
+    updateRadarFromProfiles(null, getFinalProfile());
+    var beadForRadar = state.selectedIndex >= 0 && state.beads ? state.beads[state.selectedIndex] : null;
+    if (beadForRadar) updateRadar(beadForRadar); else updateRadarFromComposition();
+  }
+
+  function getRelatedIndices(centerIndex) {
+    if (centerIndex < 0 || !state.beads) return [];
+    var center = state.beads[centerIndex];
+    var fk = beadFunctionKey(center);
+    var out = [];
+    for (var i = 0; i < state.beads.length; i++) {
+      if (i === centerIndex) continue;
+      if (beadFunctionKey(state.beads[i]) === fk) out.push(i);
+    }
+    return out;
+  }
+
+  function showDetail(bead, locked) {
+    document.getElementById('detailName').textContent = bead.name;
+    document.getElementById('detailMaterial').textContent = bead.material;
+    document.getElementById('detailElement').textContent = getElementLabel(bead);
+    document.getElementById('detailLevel').textContent = getDisplayFunction(bead);
+    document.getElementById('detailTier').textContent = bead.tier;
+    document.getElementById('detailDesc').textContent = bead.description || '—';
+    var meta = getBeadMetadata(bead, state.dateStr);
+    document.getElementById('detailSignal').textContent = meta.signal;
+    document.getElementById('detailResonance').textContent = meta.resonance;
+    document.getElementById('detailAlign').textContent = meta.alignment;
+    var densityEl = document.getElementById('detailDensity');
+    if (densityEl) {
+      var dv = parseFloat(meta.density, 10);
+      if (!isNaN(dv)) {
+        densityEl.textContent = dv.toFixed(2) + ' (' + densityLabel(dv) + ')';
+      } else {
+        densityEl.textContent = '—';
+      }
+    }
+  }
+
+  function hideDetail() {
+    if (state.selectedIndex >= 0 && state.stage !== 'preview') return;
+    document.getElementById('panelDefault').style.display = 'block';
+    document.getElementById('panelDetail').classList.remove('active');
+    document.getElementById('btnClearSelection').style.display = 'none';
+    var panelTitle = document.getElementById('panelTitle');
+    if (panelTitle) panelTitle.textContent = 'STRUCTURAL PROFILE';
+  }
+
+  // ——— Magnetic cursor: tier (Core = less) and ring (outer = more), smooth easing ———
+  var MAGNET_RADIUS = 130;
+  var MAGNET_BASE = 5;
+  var LERP_DEFAULT = 0.095;
+  var LERP_CORE = 0.055;
+
+  function startMagneticLoop() {
+    var field = getBeadFieldNodes();
+    var wrap = document.getElementById('beadFieldWrap');
+    if (!field || !wrap) return;
+    function loop() {
+      state.animId = requestAnimationFrame(loop);
+      if (state.mode !== 'assembly' || !state.beads || state.beads.length === 0 || !state.radialPositions) return;
+      var rect = wrap.getBoundingClientRect();
+      var positions = state.radialPositions;
+      var nBeads = state.beads.length;
+      for (var i = 0; i < nBeads; i++) {
+        var pos = positions[i];
+        if (!pos) continue;
+        var beadCenterX = rect.left + (pos.x / 100) * rect.width;
+        var beadCenterY = rect.top + (pos.y / 100) * rect.height;
+        var dx = state.cursorX - beadCenterX;
+        var dy = state.cursorY - beadCenterY;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var targetX = 0, targetY = 0;
+        if (state.cursorInField && dist < MAGNET_RADIUS && dist > 2) {
+          var ring = pos.ring != null ? pos.ring : (i < 8 ? 0 : 1);
+          var ringFactor = ring === 0 ? 0.78 : 1.18;
+          var el = field.querySelector('[data-index="' + i + '"]');
+          var tier = el ? el.getAttribute('data-tier') : '';
+          var tierFactor = tier === 'Core' ? 0.35 : tier === 'Primary' ? 0.68 : 1;
+          var force = (1 - dist / MAGNET_RADIUS) * MAGNET_BASE * ringFactor * tierFactor;
+          targetX = (dx / dist) * force;
+          targetY = (dy / dist) * force;
+        }
+        state.beadTargets[i].x = targetX;
+        state.beadTargets[i].y = targetY;
+        var el = field.querySelector('[data-index="' + i + '"]');
+        var lerp = (el && el.getAttribute('data-tier') === 'Core') ? LERP_CORE : LERP_DEFAULT;
+        state.beadOffsets[i].x += (state.beadTargets[i].x - state.beadOffsets[i].x) * lerp;
+        state.beadOffsets[i].y += (state.beadTargets[i].y - state.beadOffsets[i].y) * lerp;
+        if (el) {
+          var scale = 0.6;
+          if (el.classList.contains('visible')) {
+            var activated = parseInt(el.getAttribute('data-activated') || '0', 10);
+            var elapsed = Date.now() - activated;
+            scale = 0.6 + 0.4 * Math.min(1, elapsed / 220);
+          }
+          el.style.transform = 'translate(-50%, -50%) translate(' + state.beadOffsets[i].x + 'px, ' + state.beadOffsets[i].y + 'px) scale(' + scale + ')';
+        }
+      }
+    }
+    loop();
+  }
+
+  function onMouseMove(e) {
+    state.cursorX = e.clientX;
+    state.cursorY = e.clientY;
+  }
+
+  function onMouseEnterField() {
+    state.cursorInField = true;
+    state.hoverIndex = -1;
+  }
+
+  function onMouseLeaveField() {
+    state.cursorInField = false;
+    state.hoverIndex = -1;
+    clearBeadResonance();
+    updateBeadStates();
+    updateConnectionLinesSync();
+    if (state.selectedIndex >= 0 && state.beads) {
+      showDetail(state.beads[state.selectedIndex], true);
+      document.getElementById('panelDefault').style.display = 'none';
+      document.getElementById('panelDetail').classList.add('active');
+      var pt = document.getElementById('panelTitle');
+      if (pt) pt.textContent = 'UNIT LOCKED';
+    } else {
+      hideDetail();
+    }
+    updateRadarFromProfiles(null, getFinalProfile());
+    if (state.selectedIndex >= 0 && state.beads) updateRadar(state.beads[state.selectedIndex]); else updateRadarFromComposition();
+  }
+
+  async function runGenerate() {
+    var dateInput = document.getElementById('birthDate');
+    var dateStr = dateInput.value;
+    if (!dateStr) {
+      document.getElementById('configStatus').textContent = 'Enter birth code.';
+      return;
+    }
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      document.getElementById('configStatus').textContent = 'Invalid date.';
+      return;
+    }
+    resetForReboot();
+    var empty = document.getElementById('emptyState');
+    if (empty) empty.style.display = 'none';
+    state.dateStr = dateStr;
+    state.apiUi = null;
+    state.apiAllocation = null;
+
+    var payload = {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour: d.getHours()
+    };
+
+    var data;
+    try {
+      var res = await fetch(BAZI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var response = await res.json();
+      data = response;
+    } catch (e) {
+      document.getElementById('configStatus').textContent = 'Bazi API unavailable. Start FastAPI on :8000.';
+      return;
+    }
+
+    var an = data.analysis || {};
+    state.apiStabilityIndex = an.stability_index != null && !isNaN(Number(an.stability_index))
+      ? Number(an.stability_index) : null;
+    state.apiAllocation = data.allocation != null ? data.allocation : null;
+    /* Single source: API beads[] → map → allocation sort → pad/truncate to 24 + guaranteed texture paths. */
+    var mapped = mapApiBeads(data.beads || []);
+    var sorted = applyAllocationSort(mapped, data.allocation);
+    state.beads = normalizeBeadsForRendering(sorted);
+    try {
+      var modCsv = await import('./bead_3d_runtime.js');
+      var tableCsv = await modCsv.loadBeadTable();
+      applyBeadModelFromCsvTable(state.beads, tableCsv);
+    } catch (eCsv) {
+      /* CSV merge optional; 3D still runs with API fields only */
+    }
+    console.log('[FVTH beads] after config load: length=', state.beads.length, 'expected', TOTAL_MAX_UNITS);
+    state.apiUi = {
+      resonance_class: an.resonance_class || null,
+      element_bias: an.element_bias || null,
+      stability_index: state.apiStabilityIndex,
+      config_status: state.beads.length + ' / 24 UNITS'
+    };
+    state.summary = buildSummaryFromApi(data);
+    state.unitQuantities = {};
+    state.mode = 'analysis';
+    state.selected = [];
+    state.stage = 'match';
+
+    if (data.profile) applyProfileToRadar(data.profile);
+
+    document.getElementById('btnRegenerate').style.display = 'inline-block';
+    var sb = document.getElementById('summaryBlock');
+    sb.style.display = 'block';
+    var ab = document.getElementById('assemblyBlock');
+    if (ab) ab.style.display = 'block';
+    document.getElementById('summaryPrimary').textContent = state.summary.primary;
+    document.getElementById('summarySecondary').textContent = state.summary.secondary;
+    document.getElementById('summaryBalance').textContent = state.summary.balance;
+    document.getElementById('summaryClass').textContent = state.summary.configClass;
+    runBootSequence(dateStr, function() {
+      renderBeads(state.beads);
+      renderAssemblyList();
+      var wrap = document.getElementById('beadFieldWrap');
+      if (wrap) {
+        wrap.classList.add('field-pulse');
+        setTimeout(function() { wrap.classList.remove('field-pulse'); }, 1200);
+      }
+      if (state.apiUi) {
+        document.getElementById('resonance').textContent = state.apiUi.resonance_class || '—';
+        document.getElementById('elementBias').textContent = state.apiUi.element_bias || '—';
+        document.getElementById('stability').textContent = state.apiUi.stability_index != null ? (state.apiUi.stability_index + '%') : '—';
+        if (state.apiUi.config_status) document.getElementById('configStatus').textContent = state.apiUi.config_status;
+      }
+      updateConfigStatus();
+    });
+  }
+
+  document.getElementById('btnGenerate').addEventListener('click', runGenerate);
+  document.getElementById('btnRegenerate').addEventListener('click', runGenerate);
+  document.getElementById('btnClearSelection').addEventListener('click', function() {
+    state.selectedIndex = -1;
+    setSelected(-1);
+  });
+  // SAVE UNIT: add 1 to selected bead quantity (max 12 per bead, total 24)
+  document.getElementById('btnSaveUnit').addEventListener('click', function() {
+    if (state.mode !== 'assembly' || !state.beads || state.selectedIndex < 0) return;
+    var msg = document.getElementById('panelActionMsg');
+    if (getTotalUnits() >= TOTAL_MAX_UNITS) {
+      if (msg) msg.textContent = 'CONFIGURATION CAPACITY REACHED (24 UNITS MAX)';
+      return;
+    }
+    addBeadToBracelet(state.selectedIndex);
+    try {
+      var bead = state.beads[state.selectedIndex];
+      localStorage.setItem('fvth_saved_unit', JSON.stringify({ bead_id: bead.id, bead_name: bead.name, material: bead.material, element: bead.element, tier: bead.tier, code: bead.code, birth_code: state.dateStr }));
+    } catch (e) {}
+    if (msg) msg.textContent = 'UNIT ADDED TO CONFIGURATION';
+    var field = getBeadFieldNodes();
+    if (field) {
+      var el = field.querySelector('[data-index="' + state.selectedIndex + '"]');
+      if (el) { el.classList.add('selected'); setTimeout(function() { el.classList.remove('selected'); }, 450); }
+    }
+  });
+  document.getElementById('btnProceedAssembly').addEventListener('click', function() {
+    if (state.mode !== 'analysis' || !state.beads) return;
+    state.mode = 'assembly';
+    state.stage = 'assembly';
+    state.renderMode = 'assembly';
+    state.selected = [];
+    renderBeads(state.beads);
+    renderAssemblyList();
+    renderAssemblyBraceletMini();
+    updateConfigStatus();
+    applyStage();
+  });
+  document.getElementById('btnGenerateBracelet').addEventListener('click', function() {
+    if (state.selected.length === 0) {
+      var am = document.getElementById('assemblyMsg');
+      if (am) am.textContent = 'Add beads to the bracelet (click units), then generate.';
+      return;
+    }
+    state.renderMode = 'final';
+    state.stage = 'preview';
+    applyStage();
+  });
+  document.getElementById('btnDeployStructure').addEventListener('click', function() {
+    var btn = document.getElementById('btnDeployStructure');
+    if (state.stage !== 'preview' || !state.selected || !state.selected.length) return;
+    var prevText = btn ? btn.textContent : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'GENERATING EXPORT…';
+    }
+    runDeployStructureExport().finally(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevText || 'DEPLOY STRUCTURE';
+      }
+    });
+  });
+  var btnAddCart = document.getElementById('btnAddBraceletToCart');
+  if (btnAddCart) btnAddCart.addEventListener('click', function() {
+    var config = {
+      configurationID: generateConfigId(),
+      units: {}
+    };
+    for (var si = 0; si < state.selected.length; si++) {
+      var code = state.selected[si].bead.code;
+      config.units[code] = (config.units[code] || 0) + 1;
+    }
+    try {
+      localStorage.setItem('fvth_bracelet_config', JSON.stringify(config));
+    } catch (e) {}
+    var msg = document.getElementById('panelActionMsg');
+    if (msg) msg.textContent = 'CONFIGURATION EXPORTED. ID: ' + config.configurationID;
+    setTimeout(function() { window.location.href = '/cart?config=' + encodeURIComponent(config.configurationID); }, 800);
+  });
+
+  // ADD TO SYSTEM: show message then redirect to product page with unit id
+  document.getElementById('btnAddToSystem').addEventListener('click', function() {
+    if (!state.beads || state.selectedIndex < 0) return;
+    var bead = state.beads[state.selectedIndex];
+    var msg = document.getElementById('panelActionMsg');
+    if (msg) msg.textContent = 'DEPLOYING CONFIGURATION...';
+    setTimeout(function() {
+      var target = '/product?unit=' + encodeURIComponent(bead.id);
+      window.location.href = target;
+    }, 600);
+  });
+  document.addEventListener('mousemove', onMouseMove);
+  var wrapEl = document.getElementById('beadFieldWrap');
+  if (wrapEl) {
+    wrapEl.addEventListener('mouseenter', onMouseEnterField);
+    wrapEl.addEventListener('mouseleave', onMouseLeaveField);
+    wrapEl.addEventListener('click', function(e) {
+      if (state.mode === 'analysis') return;
+      if (!e.target.closest || !e.target.closest('.bead')) {
+        state.selectedIndex = -1;
+        setSelected(-1);
+      }
+    });
+  }
+
+  // 7. Drifting particles: 25 dots, randomized size (1–2px), opacity (0.15–0.35), delay
+  (function initParticles() {
+    var container = document.getElementById('envParticles');
+    if (!container) return;
+    var count = 25;
+    var seed = 12345;
+    function hash(x) { return ((x * 2654435761) >>> 0) % 10000 / 10000; }
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('span');
+      p.className = 'particle';
+      var size = hash(seed + i * 19) > 0.5 ? 2 : 1;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.opacity = 0.15 + hash(seed + i * 23) * 0.2;
+      p.style.left = (5 + hash(seed + i * 7) * 90) + '%';
+      p.style.top = (5 + hash(seed + i * 11) * 90) + '%';
+      p.style.animationDelay = (hash(seed + i * 13) * 22) + 's';
+      p.style.animationDuration = (24 + hash(seed + i * 17) * 8) + 's';
+      container.appendChild(p);
+    }
+  })();
+
+  applyModeToUI();
+})();
+  </script>
+</body>
+</html>

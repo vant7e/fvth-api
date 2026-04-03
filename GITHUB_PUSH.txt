@@ -1,0 +1,18 @@
+Deploy bundle: FastAPI api.py + engine.py + beads_master.csv + beads/ + Procfile + requirements.txt
+
+1) Create an empty GitHub repo (no README). Copy its HTTPS URL.
+
+2) In this directory:
+   git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
+   git branch -M main
+   git push -u origin main
+
+3) Railway: New Project -> Deploy from GitHub -> pick that repo.
+   Root Directory: leave empty (repo root = this folder).
+   Build/start: Nixpacks will detect Python; Procfile runs uvicorn.
+
+4) If the parent FVTH monorepo also tracked this folder, stop double-tracking:
+   From FVTH repo root:
+   git rm -r --cached fvth/bazi
+   echo 'fvth/bazi/' >> .gitignore
+   git add .gitignore && git commit -m "Track fvth/bazi only in its own GitHub repo"
