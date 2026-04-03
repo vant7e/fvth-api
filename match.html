@@ -44,6 +44,42 @@
       overflow-x: hidden;
       position: relative;
     }
+    body.portrait-lock-active {
+      overflow: hidden;
+      touch-action: none;
+    }
+    .portrait-lock-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20000;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 7, 8, 0.97);
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 24px;
+      font-family: var(--font-mono);
+      flex-direction: column;
+    }
+    .portrait-lock-overlay.visible {
+      display: flex;
+    }
+    .portrait-lock-inner {
+      max-width: 320px;
+    }
+    .portrait-lock-line {
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      margin: 0 0 0.75rem;
+      color: var(--text-primary);
+    }
+    .portrait-lock-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.55;
+    }
     /* 1. Extremely subtle engineering grid background */
     body::before {
       content: '';
@@ -804,6 +840,15 @@
     .assembly-block .assembly-msg { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.62rem; }
     .assembly-block .btn-assembly { margin-top: 0.6rem; width: 100%; }
     .assembly-block .btn-preview { margin-top: 0.5rem; width: 100%; }
+    .assembly-mount-main,
+    .assembly-mount-aside {
+      display: none;
+    }
+    .assembly-mount-main.has-assembly,
+    .assembly-mount-aside.has-assembly {
+      display: block;
+      width: 100%;
+    }
     .assembly-bracelet-wrap { margin-top: 0.75rem; text-align: center; }
     .assembly-bracelet-title { font-size: 0.58rem; letter-spacing: 0.12em; color: var(--text-muted); margin-bottom: 0.4rem; }
     .assembly-bracelet-ring {
@@ -861,6 +906,143 @@
     .bracelet-preview .config-code strong { color: var(--text-secondary); }
     .result-section.stage-preview .bead-field-wrap { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
     .result-section.stage-preview #beadContainer .empty-state { opacity: 0; pointer-events: none; }
+
+    /* In-page DEPLOY STRUCTURE export (no pop-out window) */
+    .deploy-export-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10050;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .deploy-export-overlay.open {
+      display: flex;
+    }
+    .deploy-export-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 5, 8, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .deploy-export-panel {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: min(440px, 100%);
+      max-height: min(92vh, 920px);
+      overflow-y: auto;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-accent);
+      border-radius: 4px;
+      padding: 1.35rem 1rem 1.5rem;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+    }
+    .deploy-export-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .deploy-export-close:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .deploy-export-title {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 0 0 0.75rem;
+      text-align: center;
+    }
+    .deploy-export-status {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      text-align: center;
+      margin: 0;
+    }
+    .deploy-export-code {
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 1rem;
+      word-break: break-all;
+    }
+    .deploy-export-vid-wrap {
+      max-width: min(400px, 96vw);
+      margin: 0 auto;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+      background: #000;
+    }
+    .deploy-export-vid-wrap video {
+      width: 100%;
+      height: auto;
+      display: block;
+      vertical-align: top;
+    }
+    .deploy-export-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 1.1rem;
+    }
+    .deploy-export-actions .btn-deploy-export {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      padding: 12px 18px;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border-radius: 3px;
+    }
+    .deploy-export-actions .btn-deploy-export:hover {
+      border-color: var(--accent-silver);
+    }
+    .deploy-export-hint {
+      max-width: 420px;
+      margin: 1rem auto 0;
+      font-size: 0.74rem;
+      line-height: 1.55;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .deploy-export-error .deploy-export-err-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin: 0 0 0.75rem;
+      text-align: center;
+    }
+    .deploy-export-error .deploy-export-err-msg {
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      margin: 0;
+      text-align: center;
+    }
 
     /* 3. Very faint drifting particles (environmental depth) */
     .env-particles {
@@ -1059,6 +1241,35 @@
         visibility: hidden;
         pointer-events: none;
       }
+      /* Assembly: below unit map; after entering assembly, only preview + generate */
+      .assembly-mount-main .assembly-block .btn-assembly,
+      .assembly-mount-main .assembly-block .btn-preview {
+        width: 100%;
+        max-width: 22rem;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+      }
+      .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-title,
+      .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-count,
+      .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-list,
+      .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-msg {
+        display: none !important;
+      }
+      .result-section.mode-assembly .assembly-mount-main .assembly-block {
+        margin-top: 0.35rem;
+        padding: 0.5rem 0 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+        box-shadow: none;
+      }
+      .result-section.mode-assembly .assembly-mount-main .assembly-block.highlight {
+        border-color: rgba(138, 138, 143, 0.25);
+        padding: 0.65rem 0 0;
+      }
+      .result-section.mode-assembly .assembly-mount-main .assembly-bracelet-wrap {
+        margin-top: 0;
+      }
     }
     .radar-module .radar-bg circle {
       stroke: rgba(255,255,255,0.08);
@@ -1154,6 +1365,12 @@
 </head>
 <body>
   <div class="env-particles" id="envParticles" aria-hidden="true"></div>
+  <div id="portraitLockOverlay" class="portrait-lock-overlay" aria-hidden="true">
+    <div class="portrait-lock-inner">
+      <p class="portrait-lock-line">Please use portrait orientation</p>
+      <p class="portrait-lock-sub">请竖屏使用 · Rotate your device vertically</p>
+    </div>
+  </div>
   <div class="page-wrap">
     <header>
       <div class="header-top">
@@ -1208,6 +1425,20 @@
               <div class="bead-field-nodes" id="beadFieldNodes"></div>
             </div>
           </div>
+        </div>
+        <div id="assemblyMountMain" class="assembly-mount-main">
+      <div class="assembly-block" id="assemblyBlock" style="display:none;">
+        <div class="assembly-title">STRUCTURE ASSEMBLY</div>
+        <div class="assembly-count" id="assemblyCount">SELECTED UNITS: 0 / 24</div>
+        <ul class="assembly-list" id="assemblyList"></ul>
+        <div class="assembly-msg" id="assemblyMsg"></div>
+        <div class="assembly-bracelet-wrap" id="assemblyBraceletWrap" style="display:none;">
+          <div class="assembly-bracelet-title">BRACELET BUILD</div>
+          <div class="assembly-bracelet-ring" id="assemblyBraceletRing"></div>
+        </div>
+        <button type="button" class="btn panel-action-btn btn-assembly" id="btnProceedAssembly">ENTER ASSEMBLY</button>
+        <button type="button" class="btn panel-action-btn btn-preview" id="btnGenerateBracelet" style="display:none;">GENERATE BRACELET</button>
+      </div>
         </div>
         <div class="bracelet-preview" id="braceletPreview">
           <div>
@@ -1269,6 +1500,30 @@
       </section>
     </main>
 
+    <div id="deployExportOverlay" class="deploy-export-overlay" aria-hidden="true">
+      <div class="deploy-export-backdrop" id="deployExportBackdrop" aria-hidden="true"></div>
+      <div class="deploy-export-panel" role="dialog" aria-modal="true" aria-labelledby="deployExportTitleLoading">
+        <button type="button" class="deploy-export-close" id="deployExportClose" aria-label="Close export">×</button>
+        <div id="deployExportLoading">
+          <p class="deploy-export-title" id="deployExportTitleLoading">STRUCTURE EXPORT</p>
+          <p class="deploy-export-status">Generating structure video…</p>
+        </div>
+        <div id="deployExportContent" class="deploy-export-content" style="display: none;">
+          <p class="deploy-export-title">STRUCTURE EXPORT</p>
+          <div class="deploy-export-code" id="deployExportCode"></div>
+          <div class="deploy-export-vid-wrap">
+            <video id="deployExportVideo" playsinline controls loop muted preload="auto"></video>
+          </div>
+          <div class="deploy-export-actions">
+            <button type="button" class="btn-deploy-export" id="deployExportBtnSave">SAVE YOUR STRUCTURE</button>
+            <button type="button" class="btn-deploy-export" id="deployExportBtnShare">SHARE YOUR STRUCTURE</button>
+          </div>
+          <p class="deploy-export-hint">9:16 looping video. Share opens the system sheet on supported phones. SAVE YOUR STRUCTURE opens the FVTH consultation page.</p>
+        </div>
+        <div id="deployExportError" class="deploy-export-error" style="display: none;"></div>
+      </div>
+    </div>
+
     <aside>
       <div class="panel-title" id="panelTitle">STRUCTURAL PROFILE</div>
       <div class="panel-default" id="panelDefault">
@@ -1306,18 +1561,7 @@
         <div class="row"><span>Configuration Class</span><span id="summaryClass">—</span></div>
         <div class="row"><span>Selected Units</span><span id="summarySelectedUnits">0</span></div>
       </div>
-      <div class="assembly-block" id="assemblyBlock" style="display:none;">
-        <div class="assembly-title">STRUCTURE ASSEMBLY</div>
-        <div class="assembly-count" id="assemblyCount">SELECTED UNITS: 0 / 24</div>
-        <ul class="assembly-list" id="assemblyList"></ul>
-        <div class="assembly-msg" id="assemblyMsg"></div>
-        <div class="assembly-bracelet-wrap" id="assemblyBraceletWrap" style="display:none;">
-          <div class="assembly-bracelet-title">BRACELET BUILD</div>
-          <div class="assembly-bracelet-ring" id="assemblyBraceletRing"></div>
-        </div>
-        <button type="button" class="btn panel-action-btn btn-assembly" id="btnProceedAssembly">ENTER ASSEMBLY</button>
-        <button type="button" class="btn panel-action-btn btn-preview" id="btnGenerateBracelet" style="display:none;">GENERATE BRACELET</button>
-      </div>
+      <div id="assemblyMountAside" class="assembly-mount-aside"></div>
     </aside>
   </div>
 
@@ -2361,16 +2605,6 @@
     ctx.closePath();
   }
 
-  function blobToArrayBuffer(b) {
-    if (b.arrayBuffer) return b.arrayBuffer();
-    return new Promise(function(resolve, reject) {
-      var r = new FileReader();
-      r.onload = function() { resolve(r.result); };
-      r.onerror = reject;
-      r.readAsArrayBuffer(b);
-    });
-  }
-
   /**
    * Lower half of deploy card: large energy profile (radar + values + balance), aligned with on-page radar logic.
    */
@@ -2610,143 +2844,140 @@
     );
   }
 
-  /** Opened synchronously from the deploy click handler so the browser treats it as user-initiated (avoids pop-up blocking after async export). */
-  function openDeployExportPlaceholderWindow() {
-    var w = window.open('about:blank', '_blank');
-    if (!w) return null;
-    try {
-      w.document.open();
-      w.document.write(
-        '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
-          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-          '<title>FVTH — Export</title><style>' +
-          'body{margin:0;background:#070708;color:#8e8e95;font-family:system-ui,-apple-system,sans-serif;' +
-          'display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;' +
-          'font-size:0.82rem;letter-spacing:0.12em;text-align:center;line-height:1.55;}</style></head>' +
-          '<body>Generating structure video…</body></html>'
-      );
-      w.document.close();
-    } catch (e) {
+  var DEPLOY_CONSULT_URL = 'https://www.fvthdesign.com/consult';
+  var deployExportState = { blob: null, objectUrl: null, fileName: '', mime: '' };
+
+  function deployExportEscapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function openDeployExportOverlayLoading() {
+    var ov = document.getElementById('deployExportOverlay');
+    if (!ov) return;
+    document.getElementById('deployExportLoading').style.display = '';
+    document.getElementById('deployExportContent').style.display = 'none';
+    var errEl = document.getElementById('deployExportError');
+    errEl.style.display = 'none';
+    errEl.innerHTML = '';
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeDeployExportOverlay() {
+    var ov = document.getElementById('deployExportOverlay');
+    if (!ov) return;
+    ov.classList.remove('open');
+    ov.setAttribute('aria-hidden', 'true');
+    var vid = document.getElementById('deployExportVideo');
+    if (vid) {
       try {
-        w.close();
-      } catch (e2) {}
-      return null;
+        vid.pause();
+        vid.removeAttribute('src');
+        vid.load();
+      } catch (e) {}
     }
-    return w;
+    if (deployExportState.objectUrl) {
+      try {
+        URL.revokeObjectURL(deployExportState.objectUrl);
+      } catch (e) {}
+    }
+    deployExportState.blob = null;
+    deployExportState.objectUrl = null;
+    deployExportState.fileName = '';
+    deployExportState.mime = '';
   }
 
-  function showDeployWindowError(w, heading, plainText) {
-    if (!w || w.closed) return;
-    var h = String(heading || 'Error')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;');
-    var p = String(plainText || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;');
-    try {
-      w.document.open();
-      w.document.write(
-        '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">' +
-          '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-          '<title>FVTH — Export</title><style>' +
-          'body{margin:0;background:#070708;color:#eaeaea;font-family:system-ui,-apple-system,sans-serif;' +
-          'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}' +
-          'h1{font-size:0.85rem;letter-spacing:0.15em;color:#8e8e95;margin:0 0 12px;}' +
-          'p{max-width:360px;text-align:center;color:#a5a5ad;line-height:1.55;margin:0;}</style></head><body>' +
-          '<h1>' +
-          h +
-          '</h1><p>' +
-          p +
-          '</p></body></html>'
-      );
-      w.document.close();
-    } catch (e) {}
+  function showDeployExportOverlayError(heading, plain) {
+    var ov = document.getElementById('deployExportOverlay');
+    if (!ov) {
+      alert((heading ? heading + ': ' : '') + plain);
+      return;
+    }
+    ov.classList.add('open');
+    ov.setAttribute('aria-hidden', 'false');
+    document.getElementById('deployExportLoading').style.display = 'none';
+    document.getElementById('deployExportContent').style.display = 'none';
+    var errEl = document.getElementById('deployExportError');
+    errEl.style.display = 'block';
+    errEl.innerHTML =
+      '<h2 class="deploy-export-err-title">' +
+      deployExportEscapeHtml(heading || 'Error') +
+      '</h2><p class="deploy-export-err-msg">' +
+      deployExportEscapeHtml(plain) +
+      '</p>';
   }
 
-  function openDeployResultWindow(blob, shareCode, mime, existingWindow) {
+  function deployExportDownloadFallback() {
+    if (!deployExportState.objectUrl) return;
+    var a = document.createElement('a');
+    a.href = deployExportState.objectUrl;
+    a.download = deployExportState.fileName;
+    a.click();
+  }
+
+  function showDeployExportResult(blob, shareCode, mime) {
     var baseName = String(shareCode || 'FVTH').replace(/[^\w-]+/g, '') + '-structure.webm';
-    var w = existingWindow && !existingWindow.closed ? existingWindow : null;
-    if (!w) {
-      if (existingWindow != null && existingWindow.closed) {
-        alert(
-          'The export window was closed before the video finished. Tap DEPLOY STRUCTURE again.'
-        );
+    deployExportState.blob = blob;
+    deployExportState.mime = mime || 'video/webm';
+    deployExportState.fileName = baseName;
+    if (deployExportState.objectUrl) {
+      try {
+        URL.revokeObjectURL(deployExportState.objectUrl);
+      } catch (e) {}
+    }
+    deployExportState.objectUrl = URL.createObjectURL(blob);
+
+    document.getElementById('deployExportLoading').style.display = 'none';
+    document.getElementById('deployExportError').style.display = 'none';
+    document.getElementById('deployExportError').innerHTML = '';
+    document.getElementById('deployExportContent').style.display = 'block';
+
+    var codeEl = document.getElementById('deployExportCode');
+    if (codeEl) codeEl.textContent = shareCode || '—';
+
+    var vid = document.getElementById('deployExportVideo');
+    vid.src = deployExportState.objectUrl;
+    vid.muted = true;
+    vid.play().catch(function() {});
+
+    var btnSave = document.getElementById('deployExportBtnSave');
+    var btnShare = document.getElementById('deployExportBtnShare');
+    btnSave.onclick = function() {
+      window.location.href = DEPLOY_CONSULT_URL;
+    };
+    btnShare.onclick = function() {
+      var L = deployExportState.blob;
+      if (!L) {
+        alert('Wait for the video to finish loading.');
         return;
       }
-      w = window.open('', '_blank');
-      if (!w) {
-        alert('Pop-up blocked. Allow pop-ups for this site, then try DEPLOY STRUCTURE again.');
-        return;
+      var f = new File([L], deployExportState.fileName, { type: L.type || deployExportState.mime });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [f] })) {
+        navigator
+          .share({ files: [f], title: 'FVTH structure', text: 'My FVTH configuration' })
+          .catch(function() {
+            deployExportDownloadFallback();
+            alert('Saved a copy — upload from your gallery to Instagram Stories or Reels.');
+          });
+      } else {
+        deployExportDownloadFallback();
+        alert('Video saved. Open Instagram (or another app) and upload this file from your photos or files.');
       }
-    }
-
-    var safeCode = String(shareCode || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    var html = [
-      '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">',
-      '<meta name="viewport" content="width=device-width,initial-scale=1">',
-      '<title>FVTH — Deploy</title><style>',
-      'body{margin:0;background:#070708;color:#eaeaea;font-family:system-ui,-apple-system,sans-serif;',
-      'display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px 16px 36px;}',
-      'h1{font-size:0.82rem;letter-spacing:0.18em;font-weight:600;margin:0 0 8px;color:#8e8e95;}',
-      '.code{font-family:ui-monospace,monospace;font-size:1.08rem;color:#fff;margin-bottom:20px;text-align:center;}',
-      '.vid-wrap{max-width:min(400px,96vw);border-radius:14px;overflow:hidden;',
-      'box-shadow:0 16px 48px rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);}',
-      'video{width:100%;height:auto;display:block;background:#000;}',
-      '.actions{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:24px;}',
-      'button{font-family:ui-monospace,monospace;font-size:0.68rem;letter-spacing:0.12em;padding:14px 22px;',
-      'cursor:pointer;border:1px solid rgba(255,255,255,.28);background:#18181d;color:#f4f4f6;border-radius:3px;}',
-      'button:hover{border-color:#d0d0d8;color:#fff;}',
-      '.hint{max-width:460px;font-size:0.74rem;line-height:1.55;color:#7e7e86;margin-top:22px;text-align:center;}',
-      '</style></head><body>',
-      '<h1>STRUCTURE EXPORT</h1>',
-      '<div class="code">', safeCode, '</div>',
-      '<div class="vid-wrap"><video id="fvthDeployVideo" playsinline controls loop muted preload="auto"></video></div>',
-      '<div class="actions">',
-      '<button type="button" id="fvthBtnSave">SAVE YOUR STRUCTURE</button>',
-      '<button type="button" id="fvthBtnShare">SHARE YOUR STRUCTURE</button>',
-      '</div>',
-      '<p class="hint">9:16 looping video. Share opens the system sheet on supported phones. SAVE YOUR STRUCTURE opens the FVTH consultation page to continue with your build.</p>',
-      '<script>',
-      '(function(){var L=null;var U=null;var FN=', JSON.stringify(baseName), ';var MT=', JSON.stringify(mime || 'video/webm'), ';var CU=', JSON.stringify('https://www.fvthdesign.com/consult'), ';',
-      'window.addEventListener("message",function(ev){if(ev.source!==window.opener||!ev.data||ev.data.type!=="FVTH_DEPLOY")return;',
-      'try{L=new Blob([ev.data.buffer],{type:ev.data.mime||MT});U=URL.createObjectURL(L);',
-      'var v=document.getElementById("fvthDeployVideo");v.src=U;v.muted=true;v.play().catch(function(){});}catch(e){}});',
-      'function dl(){if(!U)return;var a=document.createElement("a");a.href=U;a.download=FN;a.click();}',
-      'document.getElementById("fvthBtnSave").onclick=function(){window.location.href=CU;};',
-      'document.getElementById("fvthBtnShare").onclick=function(){',
-      'if(!L){alert("Wait for the video to finish loading.");return;}',
-      'var f=new File([L],FN,{type:L.type||MT});',
-      'if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){',
-      'navigator.share({files:[f],title:"FVTH structure",text:"My FVTH configuration"}).catch(function(){dl();alert("Saved a copy — upload from your gallery to Instagram Stories or Reels.");});',
-      '}else{dl();alert("Video saved. Open Instagram (or another app) and upload this file from your photos or files.");}',
-      '};',
-      'if(window.opener)window.opener.postMessage({type:"FVTH_DEPLOY_CHILD_READY"},"*");',
-      '})();<\/script></body></html>'
-    ].join('');
-
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-
-    function onReady(ev) {
-      if (ev.source !== w || !ev.data || ev.data.type !== 'FVTH_DEPLOY_CHILD_READY') return;
-      window.removeEventListener('message', onReady);
-      blobToArrayBuffer(blob).then(function(buf) {
-        w.postMessage({ type: 'FVTH_DEPLOY', buffer: buf, mime: mime }, '*');
-      }).catch(function() {
-        alert('Could not transfer the export to the new window. Try again or use a newer browser.');
-      });
-    }
-    window.addEventListener('message', onReady);
-    setTimeout(function() { window.removeEventListener('message', onReady); }, 90000);
+    };
   }
 
-  async function runDeployStructureExport(deployWin) {
-    if (!state.selected || !state.selected.length) return;
+  async function runDeployStructureExport() {
+    openDeployExportOverlayLoading();
+    if (!state.selected || !state.selected.length) {
+      closeDeployExportOverlay();
+      return;
+    }
     var mime = pickDeployVideoMime();
     if (!mime) {
-      showDeployWindowError(
-        deployWin,
+      showDeployExportOverlayError(
         'EXPORT NOT AVAILABLE',
         'This browser cannot record WebM video. Try Chrome, Edge, or Firefox.'
       );
@@ -2836,15 +3067,11 @@
         tickFrame();
       });
 
-      openDeployResultWindow(blob, shareCode, mime, deployWin);
+      showDeployExportResult(blob, shareCode, mime);
     } catch (err) {
       console.error(err);
       var errMsg = err && err.message ? err.message : String(err);
-      if (deployWin && !deployWin.closed) {
-        showDeployWindowError(deployWin, 'EXPORT FAILED', errMsg);
-      } else {
-        alert('Export failed: ' + errMsg);
-      }
+      showDeployExportOverlayError('EXPORT FAILED', errMsg);
     } finally {
       if (inst) {
         try { inst.dispose(); } catch (e2) { /* ignore */ }
@@ -3782,25 +4009,29 @@
   document.getElementById('btnDeployStructure').addEventListener('click', function() {
     var btn = document.getElementById('btnDeployStructure');
     if (state.stage !== 'preview' || !state.selected || !state.selected.length) return;
-    var deployWin = openDeployExportPlaceholderWindow();
-    if (!deployWin) {
-      alert(
-        'Pop-up blocked. Allow pop-ups for this site for DEPLOY STRUCTURE, or use a browser that permits this tab to open a new window when you tap the button.'
-      );
-      return;
-    }
     var prevText = btn ? btn.textContent : '';
     if (btn) {
       btn.disabled = true;
       btn.textContent = 'GENERATING EXPORT…';
     }
-    runDeployStructureExport(deployWin).finally(function() {
+    runDeployStructureExport().finally(function() {
       if (btn) {
         btn.disabled = false;
         btn.textContent = prevText || 'DEPLOY STRUCTURE';
       }
     });
   });
+  (function initDeployExportOverlayUi() {
+    var closeBtn = document.getElementById('deployExportClose');
+    var backdrop = document.getElementById('deployExportBackdrop');
+    if (closeBtn) closeBtn.addEventListener('click', closeDeployExportOverlay);
+    if (backdrop) backdrop.addEventListener('click', closeDeployExportOverlay);
+    document.addEventListener('keydown', function(ev) {
+      if (ev.key !== 'Escape') return;
+      var ov = document.getElementById('deployExportOverlay');
+      if (ov && ov.classList.contains('open')) closeDeployExportOverlay();
+    });
+  })();
   var btnAddCart = document.getElementById('btnAddBraceletToCart');
   if (btnAddCart) btnAddCart.addEventListener('click', function() {
     var config = {
@@ -3865,6 +4096,44 @@
       container.appendChild(p);
     }
   })();
+
+  function syncAssemblyPlacement() {
+    var block = document.getElementById('assemblyBlock');
+    var mainM = document.getElementById('assemblyMountMain');
+    var asideM = document.getElementById('assemblyMountAside');
+    if (!block || !mainM || !asideM) return;
+    var mobile = window.matchMedia('(max-width: 900px)').matches;
+    if (mobile) {
+      if (block.parentNode !== mainM) mainM.appendChild(block);
+    } else {
+      if (block.parentNode !== asideM) asideM.appendChild(block);
+    }
+    mainM.classList.toggle('has-assembly', block.parentNode === mainM);
+    asideM.classList.toggle('has-assembly', block.parentNode === asideM);
+  }
+
+  function syncPortraitLock() {
+    var lock = window.matchMedia('(max-width: 900px) and (orientation: landscape)').matches;
+    document.body.classList.toggle('portrait-lock-active', lock);
+    var o = document.getElementById('portraitLockOverlay');
+    if (o) {
+      o.classList.toggle('visible', lock);
+      o.setAttribute('aria-hidden', lock ? 'false' : 'true');
+    }
+  }
+
+  var layoutResizeTimer = null;
+  function onLayoutResize() {
+    if (layoutResizeTimer) clearTimeout(layoutResizeTimer);
+    layoutResizeTimer = setTimeout(function() {
+      syncAssemblyPlacement();
+      syncPortraitLock();
+    }, 80);
+  }
+  window.addEventListener('resize', onLayoutResize);
+  window.addEventListener('orientationchange', onLayoutResize);
+  syncAssemblyPlacement();
+  syncPortraitLock();
 
   applyModeToUI();
 })();
