@@ -11,7 +11,11 @@ Deploy bundle: FastAPI api.py + engine.py + beads_master.csv + beads/ + Procfile
    Root Directory: leave empty (repo root = this folder).
    Build/start: Nixpacks will detect Python; Procfile runs uvicorn.
 
-4) If the parent FVTH monorepo also tracked this folder, stop double-tracking:
+4) Same service serves the match UI:
+   https://<your-railway-host>/match.html  (or https://<host>/ → redirects)
+   Wix: embed that URL in an iframe. API stays POST /bazi, textures /beads/.
+
+5) If the parent FVTH monorepo also tracked this folder, stop double-tracking:
    From FVTH repo root:
    git rm -r --cached fvth/bazi
    echo 'fvth/bazi/' >> .gitignore

@@ -1280,7 +1280,14 @@
   }
   var currentFinalProfile = { fire: 0, earth: 0, metal: 0, water: 0, wood: 0 };
   var targetFinalProfile = { fire: 0, earth: 0, metal: 0, water: 0, wood: 0 };
-  var BAZI_API_URL = 'http://127.0.0.1:8000/bazi';
+  var BAZI_API_URL = (function() {
+    try {
+      if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.protocol !== 'file:') {
+        return window.location.origin.replace(/\/$/, '') + '/bazi';
+      }
+    } catch (e) { /* ignore */ }
+    return 'https://fvth-api-production.up.railway.app/bazi';
+  })();
 
   /** Collect candidate image paths/URLs (multi-image: API `images` or | in `image`). */
   function beadImageCandidates(bead) {
@@ -1353,7 +1360,12 @@
     }
     var fname = raw.replace(/^\/+/, '').replace(/^beads\/?/i, '');
     var v = (hashStr((state.dateStr || '') + (bead.id || '') + String(instanceKey || '')) >>> 0).toString(16);
-    return './beads/' + fname.split('/').map(function(p) { return encodeURIComponent(p); }).join('/') + '?v=' + v;
+    var pathPart = fname.split('/').map(function(p) { return encodeURIComponent(p); }).join('/');
+    var beadsBase = './beads/';
+    try {
+      beadsBase = new URL(BAZI_API_URL).origin + '/beads/';
+    } catch (e) { /* keep ./beads/ if URL invalid */ }
+    return beadsBase + pathPart + '?v=' + v;
   }
 
   /** Append cache-buster so browser reloads images after CSV/API changes. */

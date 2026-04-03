@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -127,4 +128,48 @@ def get_bazi(req: BaziRequest):
     }
 
 
+# --- Same-origin UI for iframe (Wix etc.): explicit files only — never expose *.py ---
+@app.get("/")
+def ui_root():
+    return RedirectResponse(url="/match.html")
+
+
+def _file_response(path: Path) -> FileResponse:
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path)
+
+
+@app.get("/match.html", response_class=FileResponse)
+def ui_match_html():
+    return _file_response(_BAZI_DIR / "match.html")
+
+
+@app.get("/bead_3d_runtime.js", response_class=FileResponse)
+def ui_bead_3d_runtime():
+    return _file_response(_BAZI_DIR / "bead_3d_runtime.js")
+
+
+@app.get("/match_bead_field_engine.js", response_class=FileResponse)
+def ui_match_bead_field_engine():
+    return _file_response(_BAZI_DIR / "match_bead_field_engine.js")
+
+
+@app.get("/beads_master.csv", response_class=FileResponse)
+def ui_beads_master_csv():
+    return _file_response(_BAZI_DIR / "beads_master.csv")
+
+
 app.mount("/beads", StaticFiles(directory=str(_BEADS_DIR)), name="beads")
+
+_models_dir = _BAZI_DIR / "models"
+if _models_dir.is_dir():
+    app.mount("/models", StaticFiles(directory=str(_models_dir)), name="models")
+
+_bg_dir = _BAZI_DIR / "bg"
+if _bg_dir.is_dir():
+    app.mount("/bg", StaticFiles(directory=str(_bg_dir)), name="bg")
+
+_logo_dir = _BAZI_DIR / "logo"
+if _logo_dir.is_dir():
+    app.mount("/logo", StaticFiles(directory=str(_logo_dir)), name="logo")
