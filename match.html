@@ -15,6 +15,8 @@
   <style>
     /* --- CSS Variables: classified / tactical dark --- */
     :root {
+      /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
+      --match-shell-max-width: 980px;
       --bg-deep: #0a0a0b;
       --bg-panel: #111113;
       --bg-elevated: #161619;
@@ -102,6 +104,18 @@
       background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 90%);
     }
 
+    /* Centers app in wide iframes (Wix) so layout matches ~980px header column */
+    .match-app-shell {
+      max-width: var(--match-shell-max-width);
+      width: 100%;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+      box-sizing: border-box;
+      padding: 0 clamp(10px, 2.5vw, 20px);
+    }
+
     .page-wrap {
       min-height: 100vh;
       display: grid;
@@ -109,12 +123,20 @@
       grid-template-rows: auto 1fr;
       grid-template-areas: "header header" "main   sidebar";
       position: relative;
-      z-index: 1;
+      /* Single horizontal gutter so header, main, and aside share one left/right edge */
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      box-sizing: border-box;
+      align-items: stretch;
     }
     @media (max-width: 900px) {
       .page-wrap {
         grid-template-columns: 1fr;
         grid-template-areas: "header" "main" "sidebar";
+      }
+      /* Stacked layout: no column gap; horizontal gutter is only .page-wrap */
+      main {
+        padding: 1.5rem 0;
       }
     }
 
@@ -122,7 +144,7 @@
     header {
       grid-area: header;
       border-bottom: 1px solid var(--border-subtle);
-      padding: 1rem 1.5rem;
+      padding: 1rem 0;
       background: var(--bg-panel);
     }
     .header-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 1.5rem; }
@@ -154,10 +176,13 @@
     /* --- Main --- */
     main {
       grid-area: main;
-      padding: 1.5rem;
+      /* Left gutter comes from .page-wrap; right padding keeps space before aside border */
+      padding: 1.5rem 1.5rem 1.5rem 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+      align-self: stretch;
     }
 
     .input-section {
@@ -217,17 +242,22 @@
 
     /* --- Result section: structural field + ambient --- */
     .result-section {
-      flex: 1;
+      flex: 1 1 auto;
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
       padding: 1.25rem;
       min-height: 380px;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
     }
     .result-section > #beadContainer {
       position: relative;
       z-index: 3;
+      flex-shrink: 0;
     }
     /* Subtle ambient: scan line */
     .result-section::after {
@@ -720,10 +750,12 @@
     aside {
       grid-area: sidebar;
       border-left: 1px solid var(--border-subtle);
-      padding: 1.25rem 1.5rem;
+      padding: 1.25rem 0;
+      min-height: 0;
       background: var(--bg-panel);
       font-family: var(--font-mono);
       font-size: 0.75rem;
+      align-self: stretch;
     }
     @media (max-width: 900px) {
       aside { border-left: none; border-top: 1px solid var(--border-subtle); }
@@ -1100,15 +1132,19 @@
       66% { transform: translate(-8px, 12px); opacity: 0.25; }
     }
 
-    /* --- ENERGY PROFILE ANALYSIS: embedded in .result-section (not viewport-fixed HUD) --- */
+    /* --- ENERGY PROFILE ANALYSIS: document flow directly under #beadContainer (desktop: centered 260px) --- */
     .radar-module.energy-panel {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
       width: 260px;
-      max-width: calc(100% - 40px);
+      max-width: 100%;
+      margin: 0.75rem auto 0.25rem;
+      align-self: center;
+      flex-shrink: 0;
       z-index: 2;
-      pointer-events: none;
+      pointer-events: auto;
       background: rgba(10, 10, 14, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(10px);
@@ -1173,14 +1209,9 @@
       filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
     }
     @media (max-width: 900px) {
-      /* Stack energy panel under the bead field — avoids overlay overlap on narrow viewports */
+      /* Narrow: full-width radar under unit map; right/bottom cleared so desktop flow rules don’t inherit */
       .result-section {
-        overflow-x: hidden;
-        overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
         min-height: 320px;
       }
       .result-section .section-title {
@@ -1193,6 +1224,7 @@
       .radar-module.energy-panel {
         position: relative;
         left: auto;
+        right: auto;
         bottom: auto;
         width: 100%;
         max-width: none;
@@ -1407,6 +1439,7 @@
       <p class="portrait-lock-sub">请竖屏使用 · Rotate your device vertically</p>
     </div>
   </div>
+  <div class="match-app-shell">
   <div class="page-wrap">
     <header>
       <div class="header-top">
@@ -1462,31 +1495,7 @@
             </div>
           </div>
         </div>
-        <div id="assemblyMountMain" class="assembly-mount-main">
-      <div class="assembly-block" id="assemblyBlock" style="display:none;">
-        <div class="assembly-title">STRUCTURE ASSEMBLY</div>
-        <div class="assembly-count" id="assemblyCount">SELECTED UNITS: 0 / 24</div>
-        <ul class="assembly-list" id="assemblyList"></ul>
-        <div class="assembly-msg" id="assemblyMsg"></div>
-        <div class="assembly-bracelet-wrap" id="assemblyBraceletWrap" style="display:none;">
-          <div class="assembly-bracelet-title">BRACELET BUILD</div>
-          <div class="assembly-bracelet-ring" id="assemblyBraceletRing"></div>
-        </div>
-        <button type="button" class="btn panel-action-btn btn-assembly" id="btnProceedAssembly">ENTER ASSEMBLY</button>
-        <button type="button" class="btn panel-action-btn btn-preview" id="btnGenerateBracelet" style="display:none;">GENERATE BRACELET</button>
-      </div>
-        </div>
-        <div class="bracelet-preview" id="braceletPreview">
-          <div>
-            <div class="bracelet-ring" id="braceletRing"></div>
-            <div class="config-code" id="braceletConfigCode">FVTH CONFIG<br><strong>—</strong></div>
-            <div class="preview-actions">
-              <button type="button" class="btn-add-cart" id="btnReturnToAssembly">RETURN TO ASSEMBLY</button>
-              <button type="button" class="btn-deploy" id="btnDeployStructure">DEPLOY STRUCTURE</button>
-            </div>
-          </div>
-        </div>
-        <!-- Embedded analysis module (anchors to .result-section; not a viewport-fixed HUD) -->
+        <!-- Energy radar: below unit map in flow (avoids overlap with bead field; aside keeps assembly / summary) -->
         <div class="radar-module energy-panel" id="radarModule" aria-label="Energy profile analysis">
           <span class="radar-title">ENERGY PROFILE ANALYSIS</span>
           <div class="radar-legend">
@@ -1532,6 +1541,30 @@
             <div class="radar-balance-bar-fill" id="radarBalanceBar" style="width:0%"></div>
           </div>
           <div class="radar-balance-pct" id="radarBalance">—</div>
+        </div>
+        <div id="assemblyMountMain" class="assembly-mount-main">
+      <div class="assembly-block" id="assemblyBlock" style="display:none;">
+        <div class="assembly-title">STRUCTURE ASSEMBLY</div>
+        <div class="assembly-count" id="assemblyCount">SELECTED UNITS: 0 / 24</div>
+        <ul class="assembly-list" id="assemblyList"></ul>
+        <div class="assembly-msg" id="assemblyMsg"></div>
+        <div class="assembly-bracelet-wrap" id="assemblyBraceletWrap" style="display:none;">
+          <div class="assembly-bracelet-title">BRACELET BUILD</div>
+          <div class="assembly-bracelet-ring" id="assemblyBraceletRing"></div>
+        </div>
+        <button type="button" class="btn panel-action-btn btn-assembly" id="btnProceedAssembly">ENTER ASSEMBLY</button>
+        <button type="button" class="btn panel-action-btn btn-preview" id="btnGenerateBracelet" style="display:none;">GENERATE BRACELET</button>
+      </div>
+        </div>
+        <div class="bracelet-preview" id="braceletPreview">
+          <div>
+            <div class="bracelet-ring" id="braceletRing"></div>
+            <div class="config-code" id="braceletConfigCode">FVTH CONFIG<br><strong>—</strong></div>
+            <div class="preview-actions">
+              <button type="button" class="btn-add-cart" id="btnReturnToAssembly">RETURN TO ASSEMBLY</button>
+              <button type="button" class="btn-deploy" id="btnDeployStructure">DEPLOY STRUCTURE</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -1599,6 +1632,7 @@
       </div>
       <div id="assemblyMountAside" class="assembly-mount-aside"></div>
     </aside>
+  </div>
   </div>
 
   <script>
