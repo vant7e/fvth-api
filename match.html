@@ -131,6 +131,26 @@
       }
     }
 
+    /*
+     * Wix / embed: physical phone but iframe layout width stays ~980px → vw looks like desktop (~412px wide rings).
+     * JS adds html.match-embed-phone-wide-iframe. Override width: html { --match-embed-shell-max: 320px; }
+     */
+    html.match-embed-phone-wide-iframe {
+      --match-embed-shell-max: 300px;
+    }
+    html.match-embed-phone-wide-iframe .match-app-shell {
+      max-width: min(var(--match-shell-max-width), var(--match-embed-shell-max));
+      padding-left: 8px;
+      padding-right: 8px;
+      overflow-x: hidden;
+    }
+    html.match-embed-phone-wide-iframe .bracelet-preview.visible .bracelet-ring {
+      width: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
+      height: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
+      max-width: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
+      max-height: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
+    }
+
     .page-wrap {
       min-height: 100vh;
       display: grid;
@@ -1758,6 +1778,30 @@
       if (window.matchMedia('(max-device-width: 900px)').matches) return true;
     } catch (e) { /* older engines */ }
     return false;
+  }
+
+  /** Wix: narrow device but iframe innerWidth ~980 — cap shell width + CSS (see html.match-embed-phone-wide-iframe). */
+  function syncEmbedPhoneWideIframe() {
+    var el = document.documentElement;
+    try {
+      var narrowDevice = window.matchMedia('(max-device-width: 900px)').matches;
+      var wideLayoutViewport = window.matchMedia('(min-width: 901px)').matches;
+      if (narrowDevice && wideLayoutViewport) {
+        el.classList.add('match-embed-phone-wide-iframe');
+        var vv = window.visualViewport;
+        if (vv && vv.width > 0 && vv.width + 24 < window.innerWidth) {
+          el.style.setProperty('--match-embed-shell-max', Math.max(260, Math.floor(vv.width)) + 'px');
+        } else {
+          el.style.removeProperty('--match-embed-shell-max');
+        }
+      } else {
+        el.classList.remove('match-embed-phone-wide-iframe');
+        el.style.removeProperty('--match-embed-shell-max');
+      }
+    } catch (err) {
+      el.classList.remove('match-embed-phone-wide-iframe');
+      el.style.removeProperty('--match-embed-shell-max');
+    }
   }
 
   // ——— Seeded RNG (deterministic from birth date) ———
@@ -4608,12 +4652,17 @@
   function onLayoutResize() {
     if (layoutResizeTimer) clearTimeout(layoutResizeTimer);
     layoutResizeTimer = setTimeout(function() {
+      syncEmbedPhoneWideIframe();
       syncAssemblyPlacement();
       syncPortraitLock();
     }, 80);
   }
   window.addEventListener('resize', onLayoutResize);
   window.addEventListener('orientationchange', onLayoutResize);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onLayoutResize);
+  }
+  syncEmbedPhoneWideIframe();
   syncAssemblyPlacement();
   syncPortraitLock();
 
