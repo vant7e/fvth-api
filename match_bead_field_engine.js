@@ -241,7 +241,11 @@ export async function ensureAssemblyRingEngine(ringEl) {
   const h = Math.max(1, ringEl.clientHeight);
   const aspect = w / Math.max(h, 1);
 
-  assemblyRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  assemblyRenderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    preserveDrawingBuffer: true,
+  });
   assemblyRenderer.domElement.setAttribute('aria-hidden', 'true');
   assemblyRenderer.domElement.style.cssText =
     'position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;';

@@ -1481,7 +1481,7 @@
             <div class="bracelet-ring" id="braceletRing"></div>
             <div class="config-code" id="braceletConfigCode">FVTH CONFIG<br><strong>—</strong></div>
             <div class="preview-actions">
-              <button type="button" class="btn-add-cart" id="btnAddBraceletToCart">ADD BRACELET TO CART</button>
+              <button type="button" class="btn-add-cart" id="btnReturnToAssembly">RETURN TO ASSEMBLY</button>
               <button type="button" class="btn-deploy" id="btnDeployStructure">DEPLOY STRUCTURE</button>
             </div>
           </div>
@@ -1554,7 +1554,7 @@
             <button type="button" class="btn-deploy-export" id="deployExportBtnSave">SAVE YOUR STRUCTURE</button>
             <button type="button" class="btn-deploy-export" id="deployExportBtnShare">SHARE YOUR STRUCTURE</button>
           </div>
-          <p class="deploy-export-hint">SAVE YOUR STRUCTURE → FVTH consult. SHARE opens the system sheet — on iPhone tap <strong>Save Video</strong> or <strong>Save to Photos</strong> (English labels; MP4 when your browser supports it).</p>
+          <p class="deploy-export-hint">SAVE YOUR STRUCTURE uploads your config to FVTH and opens match-02. SHARE opens the system sheet — on iPhone tap <strong>Save Video</strong> or <strong>Save to Photos</strong> (English labels; MP4 when your browser supports it).</p>
           <p class="deploy-export-dl-note" id="deployExportDlNote">
             <a href="#" id="deployExportDlLink" class="deploy-export-dl-link" download="fvth-structure.webm">Download video file</a>
             <span id="deployExportDlHint"> — tap if share did not save (Safari may need a direct tap).</span>
@@ -1663,6 +1663,182 @@
     } catch (e) { /* ignore */ }
     return 'https://fvth-api-production.up.railway.app/bazi';
   })();
+
+  /**
+   * Wix cart URL (full https). Set on the parent page or before this script runs, e.g.:
+   *   <script>window.FVTH_CART_URL = 'https://yoursite.wixsite.com/yoursite/cart-page';</script>
+   * If unset, Add to cart uses same host + /cart (standalone only).
+   */
+  function getFvthCartBaseUrl() {
+    try {
+      if (typeof window !== 'undefined' && window.FVTH_CART_URL && String(window.FVTH_CART_URL).trim()) {
+        return String(window.FVTH_CART_URL).trim();
+      }
+    } catch (e) { /* ignore */ }
+    return '';
+  }
+
+  /** From datetime-local / ISO → dob yyyy/mm/dd and dob_t HH:mm for Wix query params. */
+  function splitBirthForCart(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return { dob: '', dobT: '' };
+    var m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{1,2}):(\d{2})/);
+    if (m) {
+      function z(n) {
+        var x = parseInt(n, 10);
+        return x < 10 ? '0' + x : String(x);
+      }
+      return { dob: m[1] + '/' + m[2] + '/' + m[3], dobT: z(m[4]) + ':' + z(m[5]) };
+    }
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) return { dob: '', dobT: '' };
+    function zp(n) {
+      return n < 10 ? '0' + n : String(n);
+    }
+    return {
+      dob: d.getFullYear() + '/' + zp(d.getMonth() + 1) + '/' + zp(d.getDate()),
+      dobT: zp(d.getHours()) + ':' + zp(d.getMinutes())
+    };
+  }
+
+  /** Append config, dob, dob_t, index (ordered bead names, comma-separated) for Wix Velo. */
+  function buildCartCheckoutUrl(configurationID) {
+    var base = getFvthCartBaseUrl();
+    var u;
+    if (base.indexOf('http://') === 0 || base.indexOf('https://') === 0) {
+      u = new URL(base);
+    } else if (base) {
+      u = new URL(base, window.location.origin);
+    } else {
+      u = new URL('/cart', window.location.origin);
+    }
+    u.searchParams.set('config', configurationID);
+    var birth = splitBirthForCart(state.dateStr || '');
+    if (!birth.dob) {
+      var inp = document.getElementById('birthDate');
+      if (inp && inp.value) birth = splitBirthForCart(inp.value);
+    }
+    if (birth.dob) u.searchParams.set('dob', birth.dob);
+    if (birth.dobT) u.searchParams.set('dob_t', birth.dobT);
+    var indexParts = [];
+    for (var si = 0; si < state.selected.length; si++) {
+      var b = state.selected[si].bead;
+      indexParts.push(b && (b.name || b.id) != null ? String(b.name || b.id) : '');
+    }
+    if (indexParts.length) u.searchParams.set('index', indexParts.join(','));
+    return u.toString();
+  }
+
+  /** After SAVE YOUR STRUCTURE: Wix match-02 + ?config= */
+  var DEPLOY_MATCH02_URL = 'https://www.fvthdesign.com/match-02';
+
+  function getFvthConfigApiBase() {
+    try {
+      if (typeof window !== 'undefined' && window.FVTH_CONFIG_API_BASE) {
+        var bx = String(window.FVTH_CONFIG_API_BASE).trim();
+        if (bx) return bx.replace(/\/$/, '');
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        window.location &&
+        window.location.origin &&
+        window.location.protocol !== 'file:'
+      ) {
+        return window.location.origin.replace(/\/$/, '');
+      }
+    } catch (e2) { /* ignore */ }
+    return '';
+  }
+
+  function dobSlashToIso(slashDob) {
+    if (!slashDob || typeof slashDob !== 'string') return '';
+    var p = slashDob.split('/');
+    if (p.length !== 3) return '';
+    return p[0] + '-' + p[1] + '-' + p[2];
+  }
+
+  function captureAssemblyBraceletPngDataUrl() {
+    var wrap = document.getElementById('assemblyBraceletRing');
+    if (!wrap) return '';
+    var cv = wrap.querySelector('canvas');
+    if (!cv || !cv.toDataURL) return '';
+    try {
+      return cv.toDataURL('image/png');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function buildStructureSaveBody(configId) {
+    var birth = splitBirthForCart(state.dateStr || '');
+    if (!birth.dob) {
+      var inp = document.getElementById('birthDate');
+      if (inp && inp.value) birth = splitBirthForCart(inp.value);
+    }
+    var beads = [];
+    for (var si = 0; si < state.selected.length; si++) {
+      var b = state.selected[si].bead;
+      if (!b) continue;
+      beads.push({
+        id: b.id,
+        code: b.code != null ? String(b.code) : '',
+        name: String(b.name || b.id || '')
+      });
+    }
+    var indexStr = beads.map(function(x) {
+      return x.name;
+    }).join(',');
+    var price = 350;
+    try {
+      if (typeof window !== 'undefined' && window.FVTH_CONFIG_PRICE != null) {
+        var n = Number(window.FVTH_CONFIG_PRICE);
+        if (!isNaN(n)) price = n;
+      }
+    } catch (e) {}
+    return {
+      config_id: configId,
+      birth: dobSlashToIso(birth.dob) || null,
+      birth_time: birth.dobT || null,
+      dob: birth.dob || null,
+      dob_t: birth.dobT || null,
+      beads: beads,
+      index: indexStr || null,
+      share_code: state.deployShareCode || null,
+      price: price,
+      image_base64: captureAssemblyBraceletPngDataUrl() || null
+    };
+  }
+
+  async function postStructureConfigAndRedirect() {
+    var apiBase = getFvthConfigApiBase();
+    if (!apiBase) {
+      alert('Config API URL missing. Set window.FVTH_CONFIG_API_BASE to your Railway API origin.');
+      return;
+    }
+    var configId = state.persistConfigId || generateConfigId();
+    var body = buildStructureSaveBody(configId);
+    var url = apiBase + '/api/config';
+    var res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Could not reach config server. Check FVTH_CONFIG_API_BASE / Railway.');
+      return;
+    }
+    if (!res.ok) {
+      var t = await res.text();
+      console.error('save config failed', res.status, t);
+      alert('Save failed (HTTP ' + res.status + ').');
+      return;
+    }
+    window.location.href = DEPLOY_MATCH02_URL + '?config=' + encodeURIComponent(configId);
+  }
 
   /** Collect candidate image paths/URLs (multi-image: API `images` or | in `image`). */
   function beadImageCandidates(bead) {
@@ -2417,7 +2593,8 @@
     bracelet3dInstance: null,
     beadField3dInstances: [],
     assemblyBracelet3dInstances: [],
-    deployShareCode: null
+    deployShareCode: null,
+    persistConfigId: null
   };
 
   function getTotalUnits() {
@@ -2589,10 +2766,11 @@
 
   function renderBraceletPreview() {
     var ring = document.getElementById('braceletRing');
+    state.persistConfigId = generateConfigId();
     state.deployShareCode = generateShareCode();
     mountBraceletWebGL(ring, 'bracelet-ring', 'bracelet3dInstance', true);
     var codeEl = document.getElementById('braceletConfigCode');
-    if (codeEl) codeEl.innerHTML = 'FVTH CONFIG<br><strong>' + state.deployShareCode + '</strong>';
+    if (codeEl) codeEl.innerHTML = 'FVTH CONFIG<br><strong>' + state.persistConfigId + '</strong>';
   }
 
   function generateConfigId() {
@@ -2883,7 +3061,6 @@
     );
   }
 
-  var DEPLOY_CONSULT_URL = 'https://www.fvthdesign.com/consult';
   var deployExportState = { blob: null, objectUrl: null, fileName: '', mime: '' };
 
   function deployExportEscapeHtml(s) {
@@ -3012,7 +3189,10 @@
     var btnSave = document.getElementById('deployExportBtnSave');
     var btnShare = document.getElementById('deployExportBtnShare');
     btnSave.onclick = function() {
-      window.location.href = DEPLOY_CONSULT_URL;
+      btnSave.disabled = true;
+      postStructureConfigAndRedirect().finally(function() {
+        btnSave.disabled = false;
+      });
     };
     btnShare.onclick = function() {
       var L = deployExportState.blob;
@@ -4170,23 +4350,16 @@
       if (ov && ov.classList.contains('open')) closeDeployExportOverlay();
     });
   })();
-  var btnAddCart = document.getElementById('btnAddBraceletToCart');
-  if (btnAddCart) btnAddCart.addEventListener('click', function() {
-    var config = {
-      configurationID: generateConfigId(),
-      units: {}
-    };
-    for (var si = 0; si < state.selected.length; si++) {
-      var code = state.selected[si].bead.code;
-      config.units[code] = (config.units[code] || 0) + 1;
-    }
-    try {
-      localStorage.setItem('fvth_bracelet_config', JSON.stringify(config));
-    } catch (e) {}
-    var msg = document.getElementById('panelActionMsg');
-    if (msg) msg.textContent = 'CONFIGURATION EXPORTED. ID: ' + config.configurationID;
-    setTimeout(function() { window.location.href = '/cart?config=' + encodeURIComponent(config.configurationID); }, 800);
-  });
+  var btnReturnAsm = document.getElementById('btnReturnToAssembly');
+  if (btnReturnAsm) {
+    btnReturnAsm.addEventListener('click', function() {
+      if (state.stage !== 'preview') return;
+      disposeBracelet3dPreview();
+      state.stage = 'assembly';
+      state.renderMode = 'assembly';
+      applyStage();
+    });
+  }
 
   document.addEventListener('mousemove', onMouseMove);
   var wrapEl = document.getElementById('beadFieldWrap');
