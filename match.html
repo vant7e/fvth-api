@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Wix/embed: parent may not shrink iframe on phones; mobile layout also uses max-device-width + JS matchIsMobileLayout(). -->
   <title>FVTH MATCH SYSTEM — Birth Code Crystal Configuration</title>
   <script type="importmap">
   {
@@ -17,6 +18,9 @@
     :root {
       /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
       --match-shell-max-width: 980px;
+      /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
+      --match-content-pad-x: 1.5rem;
+      --match-content-pad-y: 1.25rem;
       --bg-deep: #0a0a0b;
       --bg-panel: #111113;
       --bg-elevated: #161619;
@@ -104,7 +108,7 @@
       background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.35) 90%);
     }
 
-    /* Centers app in wide iframes (Wix) so layout matches ~980px header column */
+    /* Centers app in wide iframes (Wix) — desktop column is exactly 980px wide */
     .match-app-shell {
       max-width: var(--match-shell-max-width);
       width: 100%;
@@ -115,6 +119,12 @@
       box-sizing: border-box;
       padding: 0 clamp(10px, 2.5vw, 20px);
     }
+    /* min-device-width: Wix/embed may keep iframe ~980px while the phone screen is narrow; pair with max-device-width mobile rules */
+    @media (min-width: 901px) and (min-device-width: 901px) {
+      .match-app-shell {
+        padding: 0;
+      }
+    }
 
     .page-wrap {
       min-height: 100vh;
@@ -123,13 +133,17 @@
       grid-template-rows: auto 1fr;
       grid-template-areas: "header header" "main   sidebar";
       position: relative;
-      /* One horizontal gutter: header, main, aside line up; panels match header bar inset */
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
       box-sizing: border-box;
       align-items: stretch;
     }
-    @media (max-width: 900px) {
+    /* Space between main column and STRUCTURAL PROFILE (desktop only) */
+    @media (min-width: 901px) and (min-device-width: 901px) {
+      .page-wrap {
+        column-gap: 1.5rem;
+      }
+    }
+    /* max-device-width: phone/tablet in a wide Wix iframe still gets stacked layout */
+    @media (max-width: 900px), (max-device-width: 900px) {
       .page-wrap {
         grid-template-columns: 1fr;
         grid-template-areas: "header" "main" "sidebar";
@@ -141,8 +155,9 @@
       grid-area: header;
       margin: 0;
       border-bottom: 1px solid var(--border-subtle);
-      padding: 1rem 0;
+      padding: var(--match-content-pad-y) var(--match-content-pad-x);
       background: var(--bg-panel);
+      box-sizing: border-box;
     }
     .header-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 1.5rem; }
     .brand {
@@ -184,7 +199,8 @@
     .input-section {
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
-      padding: 1.25rem 1.5rem;
+      padding: var(--match-content-pad-y) var(--match-content-pad-x);
+      box-sizing: border-box;
     }
     .input-section label {
       font-family: var(--font-mono);
@@ -245,7 +261,7 @@
       flex: 1 1 auto;
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
-      padding: 1.25rem 1.5rem;
+      padding: var(--match-content-pad-y) var(--match-content-pad-x);
       min-height: 380px;
       position: relative;
       overflow-x: hidden;
@@ -253,6 +269,7 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
+      box-sizing: border-box;
     }
     .result-section > #beadContainer {
       position: relative;
@@ -282,7 +299,7 @@
       font-size: 0.7rem;
       letter-spacing: 0.1em;
       color: var(--text-muted);
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
     .empty-state {
       display: flex;
@@ -760,14 +777,15 @@
     aside {
       grid-area: sidebar;
       border-left: 1px solid var(--border-subtle);
-      padding: 1.25rem 0;
+      padding: var(--match-content-pad-y) var(--match-content-pad-x);
       min-height: 0;
       background: var(--bg-panel);
       font-family: var(--font-mono);
       font-size: 0.75rem;
       align-self: stretch;
+      box-sizing: border-box;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 900px), (max-device-width: 900px) {
       aside { border-left: none; border-top: 1px solid var(--border-subtle); }
     }
     .panel-title {
@@ -1142,7 +1160,7 @@
       66% { transform: translate(-8px, 12px); opacity: 0.25; }
     }
 
-    /* --- ENERGY PROFILE ANALYSIS: document flow directly under #beadContainer (desktop: centered 260px) --- */
+    /* --- ENERGY PROFILE ANALYSIS: left-aligned with 980px gutter; desktop pins to bottom of unit map column when aside is tall --- */
     .radar-module.energy-panel {
       position: relative;
       left: auto;
@@ -1150,8 +1168,8 @@
       bottom: auto;
       width: 260px;
       max-width: 100%;
-      margin: 0.75rem auto 0.25rem;
-      align-self: center;
+      margin: 0 0 0.25rem;
+      align-self: flex-start;
       flex-shrink: 0;
       z-index: 2;
       pointer-events: auto;
@@ -1218,7 +1236,7 @@
       transform-box: fill-box;
       filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
     }
-    @media (max-width: 900px) {
+    @media (max-width: 900px), (max-device-width: 900px) {
       /* Narrow: full-width radar under unit map; right/bottom cleared so desktop flow rules don’t inherit */
       .result-section {
         -webkit-overflow-scrolling: touch;
@@ -1349,6 +1367,17 @@
         margin-top: 0;
       }
     }
+
+    /* Desktop (real wide screen): extra air above radar; pin energy panel to bottom of UNIT MAP column */
+    @media (min-width: 901px) and (min-device-width: 901px) {
+      .result-section > #beadContainer {
+        padding-bottom: 2rem;
+      }
+      .result-section:not(.stage-preview) > #radarModule.energy-panel {
+        margin-top: auto;
+      }
+    }
+
     .radar-module .radar-bg circle {
       stroke: rgba(255,255,255,0.08);
       stroke-width: 0.35;
@@ -1649,6 +1678,19 @@
   <script>
 (function() {
   'use strict';
+
+  /**
+   * Stacked/mobile layout: narrow iframe OR physical narrow screen. Wix embed often keeps iframe ~980px
+   * while the device is a phone — (max-device-width) in CSS; this mirrors that for JS (assembly mount, export, etc.).
+   */
+  function matchIsMobileLayout() {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    if (window.matchMedia('(max-width: 900px)').matches) return true;
+    try {
+      if (window.matchMedia('(max-device-width: 900px)').matches) return true;
+    } catch (e) { /* older engines */ }
+    return false;
+  }
 
   // ——— Seeded RNG (deterministic from birth date) ———
   function mulberry32(seed) {
@@ -3318,10 +3360,7 @@
     }
 
     var shareCode = state.deployShareCode || generateShareCode();
-    var narrow =
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(max-width: 900px)').matches;
+    var narrow = matchIsMobileLayout();
     /* Narrow viewports: smaller canvas + fewer frames + higher capture fps = much shorter wall-clock time. */
     var W = narrow ? 720 : 1080;
     var H = narrow ? 1280 : 1920;
@@ -4477,7 +4516,7 @@
     var mainM = document.getElementById('assemblyMountMain');
     var asideM = document.getElementById('assemblyMountAside');
     if (!block || !mainM || !asideM) return;
-    var mobile = window.matchMedia('(max-width: 900px)').matches;
+    var mobile = matchIsMobileLayout();
     if (mobile) {
       if (block.parentNode !== mainM) mainM.appendChild(block);
     } else {
@@ -4488,7 +4527,7 @@
   }
 
   function syncPortraitLock() {
-    var lock = window.matchMedia('(max-width: 900px) and (orientation: landscape)').matches;
+    var lock = matchIsMobileLayout() && window.matchMedia('(orientation: landscape)').matches;
     document.body.classList.toggle('portrait-lock-active', lock);
     var o = document.getElementById('portraitLockOverlay');
     if (o) {
