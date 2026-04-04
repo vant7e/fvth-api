@@ -123,6 +123,11 @@
       grid-template-rows: auto 1fr;
       grid-template-areas: "header header" "main   sidebar";
       position: relative;
+      /* One horizontal gutter: header, main, aside line up; panels match header bar inset */
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      box-sizing: border-box;
+      align-items: stretch;
     }
     @media (max-width: 900px) {
       .page-wrap {
@@ -136,7 +141,7 @@
       grid-area: header;
       margin: 0;
       border-bottom: 1px solid var(--border-subtle);
-      padding: 1rem 1.5rem;
+      padding: 1rem 0;
       background: var(--bg-panel);
     }
     .header-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1rem 1.5rem; }
@@ -168,7 +173,7 @@
     /* --- Main --- */
     main {
       grid-area: main;
-      padding: 1.5rem;
+      padding: 1.5rem 0;
       min-height: 0;
       display: flex;
       flex-direction: column;
@@ -240,7 +245,7 @@
       flex: 1 1 auto;
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
-      padding: 1.25rem;
+      padding: 1.25rem 1.5rem;
       min-height: 380px;
       position: relative;
       overflow-x: hidden;
@@ -253,6 +258,7 @@
       position: relative;
       z-index: 3;
       flex-shrink: 0;
+      min-height: 280px;
     }
     /* Subtle ambient: scan line */
     .result-section::after {
@@ -290,31 +296,40 @@
       text-align: center;
       padding: 1rem;
     }
-    /* Boot sequence: message + visual feedback */
-    .boot-message {
+    /* Boot sequence: visuals + copy anchored to #beadContainer (ring center), not radar / full column */
+    #beadContainer .boot-message {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       font-family: var(--font-mono);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       letter-spacing: 0.08em;
       color: var(--text-secondary);
       opacity: 0;
       transition: opacity 0.25s ease;
-      z-index: 4;
+      z-index: 6;
+      max-width: min(22rem, 92%);
+      text-align: center;
+      padding: 0 0.75rem;
+      box-sizing: border-box;
+      pointer-events: none;
     }
-    .boot-message.visible { opacity: 1; }
-    /* Boot-phase: fade previous content, show scanning + guide rings */
+    #beadContainer .boot-message.visible { opacity: 1; }
     .result-section.boot-phase .bead-field-wrap { opacity: 0.15; transition: opacity 0.35s ease; }
     .result-section.boot-phase .boot-visuals { opacity: 1; }
-    .boot-visuals {
+    .result-section.boot-phase #radarModule {
+      opacity: 0.16;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #beadContainer .boot-visuals {
       position: absolute;
       inset: 0;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.3s ease;
-      z-index: 5;
+      z-index: 4;
     }
     /* 6. Boot scan ring: expanding ring animation during initialization */
     .boot-scan-circle {
@@ -745,7 +760,7 @@
     aside {
       grid-area: sidebar;
       border-left: 1px solid var(--border-subtle);
-      padding: 1.25rem 1.5rem;
+      padding: 1.25rem 0;
       min-height: 0;
       background: var(--bg-panel);
       font-family: var(--font-mono);
@@ -1467,12 +1482,6 @@
 
       <section class="result-section mode-analysis" id="resultSection">
         <div class="section-title">UNIT MAP — CONFIGURATION RESULT</div>
-        <div class="boot-visuals" id="bootVisuals">
-          <div class="boot-scan-circle"></div>
-          <div class="boot-guide-ring inner"></div>
-          <div class="boot-guide-ring outer"></div>
-        </div>
-        <div class="boot-message" id="bootMessage"></div>
         <div id="beadContainer">
           <div class="empty-state" id="emptyState">
             Enter birth code and generate to display 24 active units.<br>Structure over belief.
@@ -1489,6 +1498,13 @@
               <div class="bead-field-nodes" id="beadFieldNodes"></div>
             </div>
           </div>
+          <!-- Boot overlay: scoped to ring area so copy does not sit over radar / full panel -->
+          <div class="boot-visuals" id="bootVisuals" aria-hidden="true">
+            <div class="boot-scan-circle"></div>
+            <div class="boot-guide-ring inner"></div>
+            <div class="boot-guide-ring outer"></div>
+          </div>
+          <div class="boot-message" id="bootMessage" role="status" aria-live="polite"></div>
         </div>
         <!-- Energy radar: below unit map in flow (avoids overlap with bead field; aside keeps assembly / summary) -->
         <div class="radar-module energy-panel" id="radarModule" aria-label="Energy profile analysis">
