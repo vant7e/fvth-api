@@ -238,9 +238,10 @@ def get_config(config_id: str, request: Request):
     png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
     if png_path.is_file():
         base = str(request.base_url).rstrip("/")
+        if base.startswith("http://"):
+            base = base.replace("http://", "https://", 1)
         data["image_url"] = f"{base}/config/{cid}/image"
     return data
-
 
 app.mount("/beads", StaticFiles(directory=str(_BEADS_DIR)), name="beads")
 
