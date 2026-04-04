@@ -21,6 +21,9 @@
       /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
       --match-content-pad-x: 1.5rem;
       --match-content-pad-y: 1.25rem;
+      /* Unit map bead plate max; display size = 98% (assembly + 3D preview alignment) */
+      --match-bead-plate-max: 420px;
+      --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
       --bg-deep: #0a0a0b;
       --bg-panel: #111113;
       --bg-elevated: #161619;
@@ -1396,6 +1399,46 @@
       }
       .result-section:not(.stage-preview) > #radarModule.energy-panel {
         margin-top: auto;
+      }
+      /* Assembly: 98% bead plate + extra gap vs title / radar */
+      .result-section.mode-assembly:not(.stage-preview) > .section-title {
+        margin-bottom: 1.75rem;
+      }
+      .result-section.mode-assembly:not(.stage-preview) > #beadContainer {
+        padding-bottom: 2.35rem;
+      }
+      .result-section.mode-assembly:not(.stage-preview) > #beadContainer .bead-field-wrap {
+        max-width: var(--match-bead-plate-display);
+        width: 98%;
+        margin-bottom: 1.35rem;
+      }
+      /* Preview: collapse unit-map slot (invisible ring still laid out at ~420px on desktop → 3D sat too low) */
+      .result-section.stage-preview > #beadContainer {
+        min-height: 0;
+        padding-bottom: 0;
+      }
+      .result-section.stage-preview > #beadContainer .empty-state {
+        min-height: 0;
+        display: none;
+      }
+      .result-section.stage-preview > #beadContainer .bead-field-wrap {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        visibility: hidden;
+        pointer-events: none;
+      }
+      /* 3D ring matches assembly plate size (post–98% shrink) */
+      .bracelet-preview.visible .bracelet-preview-inner {
+        max-width: min(var(--match-bead-plate-display), 100%);
+      }
+      .bracelet-preview.visible .bracelet-ring {
+        width: min(var(--match-bead-plate-display), 100%);
+        height: min(var(--match-bead-plate-display), 100%);
+        max-width: min(var(--match-bead-plate-display), 100%);
+        max-height: min(var(--match-bead-plate-display), 100%);
       }
     }
 
