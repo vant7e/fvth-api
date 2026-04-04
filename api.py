@@ -1,16 +1,27 @@
+import base64
+import json
+import re
 from pathlib import Path
+from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from engine import calculate_full_system
 
 _BAZI_DIR = Path(__file__).resolve().parent
 _BEADS_DIR = _BAZI_DIR / "beads"
 _BEADS_DIR.mkdir(parents=True, exist_ok=True)
+
+_SAVED_CONFIG_DIR = _BAZI_DIR / "saved_configs"
+_SAVED_IMAGES_DIR = _SAVED_CONFIG_DIR / "images"
+_SAVED_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+_SAVED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+_CONFIG_ID_RE = re.compile(r"^FVTH-[0-9A-F]{5}$")
 
 app = FastAPI()
 
@@ -27,6 +38,39 @@ class BaziRequest(BaseModel):
     month: int
     day: int
     hour: int
+
+
+class ConfigRequest(BaseModel):
+    """Bracelet save payload from match.html (extra keys e.g. dob / share_code are kept in JSON)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    config_id: str
+    birth: Optional[str] = None
+    birth_time: Optional[str] = None
+    beads: Optional[list[Any]] = Field(default=None)
+    index: Optional[str] = None
+    price: float = 350.0
+    image_base64: Optional[str] = None
+
+
+def _validate_config_id(config_id: str) -> str:
+    cid = (config_id or "").strip()
+    if not _CONFIG_ID_RE.match(cid):
+        raise HTTPException(status_code=400, detail="Invalid config_id")
+    return cid
+
+
+def _decode_base64_image(data: Optional[str]) -> Optional[bytes]:
+    if not data or not str(data).strip():
+        return None
+    s = str(data).strip()
+    if "," in s and s.lower().startswith("data:"):
+        s = s.split(",", 1)[1]
+    try:
+        return base64.b64decode(s)
+    except Exception:
+        return None
 
 
 def _compute_stability_index(wuxing: dict) -> int:
@@ -158,6 +202,44 @@ def ui_match_bead_field_engine():
 @app.get("/beads_master.csv", response_class=FileResponse)
 def ui_beads_master_csv():
     return _file_response(_BAZI_DIR / "beads_master.csv")
+
+
+@app.post("/api/config")
+def save_config(req: ConfigRequest):
+    cid = _validate_config_id(req.config_id)
+    payload = req.model_dump(mode="json", exclude_none=False)
+    payload.pop("image_base64", None)
+
+    img_bytes = _decode_base64_image(req.image_base64)
+    if img_bytes:
+        (_SAVED_IMAGES_DIR / f"{cid}.png").write_bytes(img_bytes)
+
+    json_path = _SAVED_CONFIG_DIR / f"{cid}.json"
+    json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    return {"status": "ok", "config_id": cid}
+
+
+@app.get("/config/{config_id}/image")
+def get_config_image(config_id: str):
+    cid = _validate_config_id(config_id)
+    png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
+    if not png_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(png_path, media_type="image/png")
+
+
+@app.get("/config/{config_id}")
+def get_config(config_id: str, request: Request):
+    cid = _validate_config_id(config_id)
+    json_path = _SAVED_CONFIG_DIR / f"{cid}.json"
+    if not json_path.is_file():
+        raise HTTPException(status_code=404, detail="Config not found")
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
+    if png_path.is_file():
+        base = str(request.base_url).rstrip("/")
+        data["image_url"] = f"{base}/config/{cid}/image"
+    return data
 
 
 app.mount("/beads", StaticFiles(directory=str(_BEADS_DIR)), name="beads")
