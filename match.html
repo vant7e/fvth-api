@@ -13,6 +13,18 @@
     }
   }
   </script>
+  <!-- Wix / wide iframe on phone: innerWidth stays ~980 so media queries may not fire; add class before paint -->
+  <script>
+  (function () {
+    try {
+      if (typeof window === 'undefined' || window.innerWidth <= 900) return;
+      var ua = navigator.userAgent || '';
+      if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return;
+      if (!/iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return;
+      document.documentElement.classList.add('match-embed-phone-wide-iframe');
+    } catch (e) { /* ignore */ }
+  })();
+  </script>
   <style>
     /* --- CSS Variables: classified / tactical dark --- */
     :root {
@@ -132,14 +144,15 @@
     }
 
     /*
-     * Wix / embed: physical phone but iframe layout width stays ~980px → vw looks like desktop (~412px wide rings).
-     * JS adds html.match-embed-phone-wide-iframe. Override width: html { --match-embed-shell-max: 320px; }
+     * Wix / embed: phone + layout viewport ~980px — media queries may not match; class from <head> script + syncEmbedPhoneWideIframe().
+     * Override: html { --match-embed-shell-max: 320px; }
      */
     html.match-embed-phone-wide-iframe {
-      --match-embed-shell-max: 300px;
+      --match-embed-shell-max: 310px;
     }
     html.match-embed-phone-wide-iframe .match-app-shell {
       max-width: min(var(--match-shell-max-width), var(--match-embed-shell-max));
+      width: 100%;
       padding-left: 8px;
       padding-right: 8px;
       overflow-x: hidden;
@@ -1780,13 +1793,28 @@
     return false;
   }
 
-  /** Wix: narrow device but iframe innerWidth ~980 — cap shell width + CSS (see html.match-embed-phone-wide-iframe). */
+  /** True for typical phones (not desktop, not most Android tablets). Used when max-device-width is unreliable inside iframe. */
+  function matchIsPhoneUserAgent() {
+    try {
+      var ua = navigator.userAgent || '';
+      if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return false;
+      return /iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** Wix: phone + layout viewport wide (~980) — cap shell; do not apply on real narrow mobile tab (innerWidth ≤ 900). */
   function syncEmbedPhoneWideIframe() {
     var el = document.documentElement;
     try {
-      var narrowDevice = window.matchMedia('(max-device-width: 900px)').matches;
       var wideLayoutViewport = window.matchMedia('(min-width: 901px)').matches;
-      if (narrowDevice && wideLayoutViewport) {
+      var narrowDevice = false;
+      try {
+        narrowDevice = window.matchMedia('(max-device-width: 900px)').matches;
+      } catch (e2) { /* ignore */ }
+      var phoneLike = matchIsPhoneUserAgent();
+      if (wideLayoutViewport && (narrowDevice || phoneLike)) {
         el.classList.add('match-embed-phone-wide-iframe');
         var vv = window.visualViewport;
         if (vv && vv.width > 0 && vv.width + 24 < window.innerWidth) {
