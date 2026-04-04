@@ -1769,6 +1769,24 @@
     }
   }
 
+  /** Encode export blob (beads-only 3D recording) for POST /api/config as preview video. */
+  function blobToDataURL(blob) {
+    return new Promise(function(resolve, reject) {
+      if (!blob || !blob.size) {
+        resolve('');
+        return;
+      }
+      var r = new FileReader();
+      r.onloadend = function() {
+        resolve(typeof r.result === 'string' ? r.result : '');
+      };
+      r.onerror = function() {
+        reject(r.error || new Error('read failed'));
+      };
+      r.readAsDataURL(blob);
+    });
+  }
+
   function buildStructureSaveBody(configId) {
     var birth = splitBirthForCart(state.dateStr || '');
     if (!birth.dob) {
@@ -1817,6 +1835,19 @@
     }
     var configId = state.persistConfigId || generateConfigId();
     var body = buildStructureSaveBody(configId);
+    var L = deployExportState.blob;
+    if (L && L.size) {
+      try {
+        var vdata = await blobToDataURL(L);
+        if (vdata) {
+          body.video_base64 = vdata;
+          body.video_mime = L.type || deployExportState.mime || 'video/webm';
+          body.image_base64 = null;
+        }
+      } catch (e) {
+        console.warn('Preview video not attached:', e);
+      }
+    }
     var url = apiBase + '/api/config';
     var res;
     try {

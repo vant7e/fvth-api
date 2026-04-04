@@ -18,8 +18,10 @@ _BEADS_DIR.mkdir(parents=True, exist_ok=True)
 
 _SAVED_CONFIG_DIR = _BAZI_DIR / "saved_configs"
 _SAVED_IMAGES_DIR = _SAVED_CONFIG_DIR / "images"
+_SAVED_VIDEOS_DIR = _SAVED_CONFIG_DIR / "videos"
 _SAVED_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 _SAVED_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+_SAVED_VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
 
 _CONFIG_ID_RE = re.compile(r"^FVTH-[0-9A-F]{5}$")
 
@@ -52,6 +54,8 @@ class ConfigRequest(BaseModel):
     index: Optional[str] = None
     price: float = 350.0
     image_base64: Optional[str] = None
+    video_base64: Optional[str] = None
+    video_mime: Optional[str] = None
 
 
 def _validate_config_id(config_id: str) -> str:
@@ -61,7 +65,7 @@ def _validate_config_id(config_id: str) -> str:
     return cid
 
 
-def _decode_base64_image(data: Optional[str]) -> Optional[bytes]:
+def _decode_base64_binary(data: Optional[str]) -> Optional[bytes]:
     if not data or not str(data).strip():
         return None
     s = str(data).strip()
@@ -71,6 +75,30 @@ def _decode_base64_image(data: Optional[str]) -> Optional[bytes]:
         return base64.b64decode(s)
     except Exception:
         return None
+
+
+def _video_ext_and_media_type(mime: Optional[str]) -> tuple[str, str]:
+    m = (mime or "").lower()
+    if "mp4" in m:
+        return ".mp4", "video/mp4"
+    return ".webm", "video/webm"
+
+
+def _write_preview_video(cid: str, raw: bytes, mime: Optional[str]) -> None:
+    ext, _ = _video_ext_and_media_type(mime)
+    for other in (".mp4", ".webm"):
+        alt = _SAVED_VIDEOS_DIR / f"{cid}{other}"
+        if alt.is_file():
+            alt.unlink()
+    (_SAVED_VIDEOS_DIR / f"{cid}{ext}").write_bytes(raw)
+
+
+def _find_preview_video(cid: str) -> tuple[Optional[Path], str]:
+    for ext, media in ((".mp4", "video/mp4"), (".webm", "video/webm")):
+        p = _SAVED_VIDEOS_DIR / f"{cid}{ext}"
+        if p.is_file():
+            return p, media
+    return None, ""
 
 
 def _compute_stability_index(wuxing: dict) -> int:
@@ -209,14 +237,34 @@ def save_config(req: ConfigRequest):
     cid = _validate_config_id(req.config_id)
     payload = req.model_dump(mode="json", exclude_none=False)
     payload.pop("image_base64", None)
+    payload.pop("video_base64", None)
+    payload.pop("video_mime", None)
 
-    img_bytes = _decode_base64_image(req.image_base64)
-    if img_bytes:
+    vid_bytes = _decode_base64_binary(req.video_base64)
+    if vid_bytes:
+        _write_preview_video(cid, vid_bytes, req.video_mime)
+
+    img_bytes = _decode_base64_binary(req.image_base64)
+    if img_bytes and not vid_bytes:
         (_SAVED_IMAGES_DIR / f"{cid}.png").write_bytes(img_bytes)
+    elif vid_bytes and (_SAVED_IMAGES_DIR / f"{cid}.png").is_file():
+        try:
+            (_SAVED_IMAGES_DIR / f"{cid}.png").unlink()
+        except OSError:
+            pass
 
     json_path = _SAVED_CONFIG_DIR / f"{cid}.json"
     json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return {"status": "ok", "config_id": cid}
+
+
+@app.get("/config/{config_id}/video")
+def get_config_video(config_id: str):
+    cid = _validate_config_id(config_id)
+    path, media = _find_preview_video(cid)
+    if not path:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return FileResponse(path, media_type=media)
 
 
 @app.get("/config/{config_id}/image")
@@ -235,12 +283,21 @@ def get_config(config_id: str, request: Request):
     if not json_path.is_file():
         raise HTTPException(status_code=404, detail="Config not found")
     data = json.loads(json_path.read_text(encoding="utf-8"))
+    base = str(request.base_url).rstrip("/")
+    if base.startswith("http://"):
+        base = base.replace("http://", "https://", 1)
+
+    vpath, _ = _find_preview_video(cid)
+    if vpath:
+        data["video_url"] = f"{base}/config/{cid}/video"
+        data["preview_url"] = data["video_url"]
+
     png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
     if png_path.is_file():
-        base = str(request.base_url).rstrip("/")
-        if base.startswith("http://"):
-            base = base.replace("http://", "https://", 1)
         data["image_url"] = f"{base}/config/{cid}/image"
+        if "preview_url" not in data:
+            data["preview_url"] = data["image_url"]
+
     return data
 
 app.mount("/beads", StaticFiles(directory=str(_BEADS_DIR)), name="beads")
