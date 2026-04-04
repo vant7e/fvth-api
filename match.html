@@ -764,12 +764,6 @@
       line-height: 1.55;
       font-size: 0.72rem;
     }
-    .panel-actions {
-      margin-top: 0.9rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
     .panel-action-btn {
       font-family: var(--font-mono);
       font-size: 0.65rem;
@@ -828,10 +822,35 @@
     .assembly-block .assembly-list { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow-y: auto; }
     .assembly-block .assembly-list li {
       display: flex; align-items: center; justify-content: space-between;
+      gap: 0.35rem;
       padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle);
       color: var(--text-secondary); font-size: 0.65rem;
     }
-    .assembly-block .assembly-list li .unit-name { flex: 1; }
+    .assembly-block .assembly-list li .unit-name { flex: 1; min-width: 0; }
+    .assembly-block .assembly-drag-handle {
+      flex: 0 0 auto;
+      cursor: grab;
+      touch-action: none;
+      color: var(--text-muted);
+      font-size: 0.5rem;
+      letter-spacing: -0.08em;
+      line-height: 1;
+      padding: 0.35rem 0.25rem 0.35rem 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .assembly-block .assembly-drag-handle:active { cursor: grabbing; }
+    body.assembly-dragging-active {
+      cursor: grabbing;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .assembly-block .assembly-list li.assembly-item-dragging {
+      opacity: 0.55;
+    }
+    .assembly-block .assembly-list li.assembly-item-drag-over {
+      box-shadow: inset 0 2px 0 0 rgba(200, 200, 210, 0.45);
+    }
     .assembly-block .assembly-remove {
       background: none; border: 1px solid var(--border-subtle); color: var(--text-muted);
       font-family: var(--font-mono); font-size: 0.6rem; padding: 0.2rem 0.4rem; cursor: pointer;
@@ -1567,10 +1586,6 @@
         <div class="desc-block">
           <div class="field-label" id="detailDescLabel">Description</div>
           <p class="desc" id="detailDesc" aria-labelledby="detailDescLabel">—</p>
-        </div>
-        <div class="panel-actions">
-          <button type="button" class="panel-action-btn" id="btnSaveUnit" style="display:none;">Save Unit</button>
-          <button type="button" class="panel-action-btn" id="btnAddToSystem" style="display:none;">Add To System</button>
         </div>
         <div class="panel-action-msg" id="panelActionMsg"></div>
         <button type="button" class="clear-btn" id="btnClearSelection" style="display:none;">Clear selection</button>
@@ -3242,7 +3257,12 @@
       var entry = state.selected[si];
       var bead = entry.bead;
       var li = document.createElement('li');
-      li.innerHTML = '<span class="unit-name">' + escapeHtml(bead.name || bead.id) + '</span><button type="button" class="assembly-remove" data-sel-index="' + si + '" aria-label="Remove">−</button>';
+      li.className = 'assembly-order-item';
+      li.setAttribute('data-sel-index', String(si));
+      li.innerHTML =
+        '<span class="assembly-drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</span>' +
+        '<span class="unit-name">' + escapeHtml(bead.name || bead.id) + '</span>' +
+        '<button type="button" class="assembly-remove" data-sel-index="' + si + '" draggable="false" aria-label="Remove">−</button>';
       list.appendChild(li);
       li.querySelector('.assembly-remove').addEventListener('click', function(ev) {
         var idx = parseInt(ev.currentTarget.getAttribute('data-sel-index'), 10);
@@ -3259,6 +3279,91 @@
     var msg = document.getElementById('assemblyMsg');
     if (msg) msg.textContent = '';
   }
+
+  function reorderAssemblySelection(fromIdx, toIdx) {
+    var arr = state.selected;
+    if (fromIdx === toIdx) return;
+    if (fromIdx < 0 || toIdx < 0 || fromIdx >= arr.length || toIdx >= arr.length) return;
+    var x = arr.splice(fromIdx, 1)[0];
+    arr.splice(toIdx, 0, x);
+  }
+
+  (function setupAssemblyListDragReorder() {
+    var list = document.getElementById('assemblyList');
+    if (!list || list._fvthAssemblyReorder) return;
+    list._fvthAssemblyReorder = true;
+    var dragState = null;
+
+    function getDropIndex(clientY) {
+      var items = list.querySelectorAll('li.assembly-order-item');
+      var n = items.length;
+      if (n === 0) return 0;
+      for (var i = 0; i < n; i++) {
+        var r = items[i].getBoundingClientRect();
+        if (clientY < r.top + r.height / 2) return i;
+      }
+      return n - 1;
+    }
+
+    function onPointerMove(ev) {
+      if (!dragState || ev.pointerId !== dragState.pointerId) return;
+      ev.preventDefault();
+      var dropIdx = getDropIndex(ev.clientY);
+      list.querySelectorAll('li.assembly-order-item').forEach(function(el, i) {
+        el.classList.toggle('assembly-item-drag-over', i === dropIdx && dropIdx !== dragState.fromIndex);
+      });
+    }
+
+    function onPointerUp(ev) {
+      if (!dragState || ev.pointerId !== dragState.pointerId) return;
+      var from = dragState.fromIndex;
+      var to = getDropIndex(ev.clientY);
+      var handle = dragState.handle;
+      try {
+        handle.releasePointerCapture(ev.pointerId);
+      } catch (e) {}
+      dragState.li.classList.remove('assembly-item-dragging');
+      document.body.classList.remove('assembly-dragging-active');
+      list.querySelectorAll('li.assembly-order-item').forEach(function(el) {
+        el.classList.remove('assembly-item-drag-over');
+      });
+      document.removeEventListener('pointermove', onPointerMove, true);
+      document.removeEventListener('pointerup', onPointerUp, true);
+      document.removeEventListener('pointercancel', onPointerUp, true);
+      dragState = null;
+      if (from !== to) {
+        reorderAssemblySelection(from, to);
+        renderAssemblyList();
+        updateBeadQuantityUI();
+        updateConfigStatus();
+        renderAssemblyBraceletMini();
+        updateRadarFromComposition();
+        applyStage();
+      }
+    }
+
+    function onPointerDown(ev) {
+      if (state.mode !== 'assembly') return;
+      var h = ev.target.closest && ev.target.closest('.assembly-drag-handle');
+      if (!h) return;
+      var li = h.closest('li.assembly-order-item');
+      if (!li || !list.contains(li)) return;
+      ev.preventDefault();
+      var idx = parseInt(li.getAttribute('data-sel-index'), 10);
+      if (isNaN(idx) || idx < 0 || idx >= state.selected.length) return;
+      dragState = { fromIndex: idx, pointerId: ev.pointerId, li: li, handle: h };
+      try {
+        h.setPointerCapture(ev.pointerId);
+      } catch (e2) {}
+      li.classList.add('assembly-item-dragging');
+      document.body.classList.add('assembly-dragging-active');
+      document.addEventListener('pointermove', onPointerMove, true);
+      document.addEventListener('pointerup', onPointerUp, true);
+      document.addEventListener('pointercancel', onPointerUp, true);
+    }
+
+    list.addEventListener('pointerdown', onPointerDown, false);
+  })();
 
   function getBraceletBeadsFromSelected() {
     return state.selected.map(function(s) { return s.bead; });
@@ -3352,10 +3457,6 @@
     panelTitle.textContent = 'STRUCTURAL PROFILE';
     var actionMsg = document.getElementById('panelActionMsg');
     if (actionMsg) actionMsg.textContent = '';
-    var btnSave = document.getElementById('btnSaveUnit');
-    var btnAdd = document.getElementById('btnAddToSystem');
-    if (btnSave) btnSave.style.display = 'none';
-    if (btnAdd) btnAdd.style.display = 'none';
     document.getElementById('resonance').textContent = '—';
     document.getElementById('elementBias').textContent = '—';
     document.getElementById('stability').textContent = '—';
@@ -3573,8 +3674,6 @@
   function setSelected(index) {
     state.selectedIndex = index;
     var panelTitle = document.getElementById('panelTitle');
-    var btnSave = document.getElementById('btnSaveUnit');
-    var btnAdd = document.getElementById('btnAddToSystem');
     var actionMsg = document.getElementById('panelActionMsg');
     if (index >= 0 && state.beads) {
       showDetail(state.beads[index], true);
@@ -3582,15 +3681,11 @@
       document.getElementById('panelDetail').classList.add('active');
       document.getElementById('btnClearSelection').style.display = 'block';
       if (panelTitle) panelTitle.textContent = 'UNIT LOCKED';
-      if (btnSave) btnSave.style.display = 'inline-block';
-      if (btnAdd) btnAdd.style.display = 'inline-block';
     } else {
       document.getElementById('panelDefault').style.display = 'block';
       document.getElementById('panelDetail').classList.remove('active');
       document.getElementById('btnClearSelection').style.display = 'none';
       if (panelTitle) panelTitle.textContent = 'STRUCTURAL PROFILE';
-      if (btnSave) btnSave.style.display = 'none';
-      if (btnAdd) btnAdd.style.display = 'none';
       if (actionMsg) actionMsg.textContent = '';
     }
     updateBeadStates();
@@ -4027,26 +4122,6 @@
     state.selectedIndex = -1;
     setSelected(-1);
   });
-  // SAVE UNIT: add 1 to selected bead quantity (max 12 per bead, total 24)
-  document.getElementById('btnSaveUnit').addEventListener('click', function() {
-    if (state.mode !== 'assembly' || !state.beads || state.selectedIndex < 0) return;
-    var msg = document.getElementById('panelActionMsg');
-    if (getTotalUnits() >= TOTAL_MAX_UNITS) {
-      if (msg) msg.textContent = 'CONFIGURATION CAPACITY REACHED (24 UNITS MAX)';
-      return;
-    }
-    addBeadToBracelet(state.selectedIndex);
-    try {
-      var bead = state.beads[state.selectedIndex];
-      localStorage.setItem('fvth_saved_unit', JSON.stringify({ bead_id: bead.id, bead_name: bead.name, material: bead.material, element: bead.element, tier: bead.tier, code: bead.code, birth_code: state.dateStr }));
-    } catch (e) {}
-    if (msg) msg.textContent = 'UNIT ADDED TO CONFIGURATION';
-    var field = getBeadFieldNodes();
-    if (field) {
-      var el = field.querySelector('[data-index="' + state.selectedIndex + '"]');
-      if (el) { el.classList.add('selected'); setTimeout(function() { el.classList.remove('selected'); }, 450); }
-    }
-  });
   document.getElementById('btnProceedAssembly').addEventListener('click', function() {
     if (state.mode !== 'analysis' || !state.beads) return;
     state.mode = 'assembly';
@@ -4113,17 +4188,6 @@
     setTimeout(function() { window.location.href = '/cart?config=' + encodeURIComponent(config.configurationID); }, 800);
   });
 
-  // ADD TO SYSTEM: show message then redirect to product page with unit id
-  document.getElementById('btnAddToSystem').addEventListener('click', function() {
-    if (!state.beads || state.selectedIndex < 0) return;
-    var bead = state.beads[state.selectedIndex];
-    var msg = document.getElementById('panelActionMsg');
-    if (msg) msg.textContent = 'DEPLOYING CONFIGURATION...';
-    setTimeout(function() {
-      var target = '/product?unit=' + encodeURIComponent(bead.id);
-      window.location.href = target;
-    }, 600);
-  });
   document.addEventListener('mousemove', onMouseMove);
   var wrapEl = document.getElementById('beadFieldWrap');
   if (wrapEl) {
