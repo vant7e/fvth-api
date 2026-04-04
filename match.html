@@ -24,6 +24,8 @@
       /* Unit map bead plate max; display size = 98% (assembly + 3D preview alignment) */
       --match-bead-plate-max: 420px;
       --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
+      /* Narrow / phone 3D preview ring: extra shrink vs plate (tune 0.82–0.92) */
+      --match-preview-ring-mobile-factor: 0.88;
       --bg-deep: #0a0a0b;
       --bg-panel: #111113;
       --bg-elevated: #161619;
@@ -1320,12 +1322,12 @@
         padding-right: 0.5rem;
         gap: 0.55rem;
       }
-      /* Match assembly unit-map ring (98% of 420px), not a hard 300px cap */
+      /* Preview ring: smaller than desktop plate; cap = plate × 0.98 × mobile factor */
       .bracelet-preview.visible .bracelet-ring {
-        width: min(92vw, var(--match-bead-plate-display), 100%);
-        height: min(92vw, var(--match-bead-plate-display), 100%);
-        max-width: min(92vw, var(--match-bead-plate-display), 100%);
-        max-height: min(92vw, var(--match-bead-plate-display), 100%);
+        width: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+        height: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+        max-width: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+        max-height: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
       }
       .bracelet-preview.visible .preview-actions {
         flex-direction: column;
