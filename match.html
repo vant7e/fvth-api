@@ -1665,9 +1665,8 @@
   })();
 
   /**
-   * Wix cart URL (full https). Set on the parent page or before this script runs, e.g.:
-   *   <script>window.FVTH_CART_URL = 'https://yoursite.wixsite.com/yoursite/cart-page';</script>
-   * If unset, Add to cart uses same host + /cart (standalone only).
+   * Wix cart URL (full https). On the embedding page set window.FVTH_CART_URL to your cart URL
+   * (must run before this script). If unset, buildCartCheckoutUrl uses same host + /cart.
    */
   function getFvthCartBaseUrl() {
     try {
