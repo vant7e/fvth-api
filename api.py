@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -56,6 +56,24 @@ class ConfigRequest(BaseModel):
     image_base64: Optional[str] = None
     video_base64: Optional[str] = None
     video_mime: Optional[str] = None
+    # Optional client URLs (used when no file is uploaded on server)
+    video_url: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+def _merge_config_post_body(body: Any) -> dict[str, Any]:
+    """Merge { config_id, data: {...}, video_url?, ... } into a flat dict for ConfigRequest."""
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="JSON object required")
+    inner = body.get("data")
+    out: dict[str, Any] = {}
+    if isinstance(inner, dict):
+        out.update(inner)
+    for k, v in body.items():
+        if k == "data":
+            continue
+        out[k] = v
+    return out
 
 
 def _validate_config_id(config_id: str) -> str:
@@ -232,8 +250,7 @@ def ui_beads_master_csv():
     return _file_response(_BAZI_DIR / "beads_master.csv")
 
 
-@app.post("/api/config")
-def save_config(req: ConfigRequest):
+def _save_config_core(req: ConfigRequest) -> dict[str, Any]:
     cid = _validate_config_id(req.config_id)
     payload = req.model_dump(mode="json", exclude_none=False)
     payload.pop("image_base64", None)
@@ -256,6 +273,19 @@ def save_config(req: ConfigRequest):
     json_path = _SAVED_CONFIG_DIR / f"{cid}.json"
     json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return {"status": "ok", "config_id": cid}
+
+
+@app.post("/api/config")
+def save_config(req: ConfigRequest):
+    return _save_config_core(req)
+
+
+@app.post("/config")
+def save_config_post_alias(body: dict[str, Any] = Body(...)):
+    """Same persistence as POST /api/config; accepts { config_id, data: { ... }, video_url?, image_url? }."""
+    merged = _merge_config_post_body(body)
+    req = ConfigRequest(**merged)
+    return _save_config_core(req)
 
 
 @app.get("/config/{config_id}/video")
@@ -292,12 +322,16 @@ def get_config(config_id: str, request: Request):
     if vpath:
         data["video_url"] = f"{base}/config/{cid}/video"
         data["preview_url"] = data["video_url"]
+    elif data.get("video_url"):
+        data["preview_url"] = data["video_url"]
 
     png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
     if png_path.is_file():
         data["image_url"] = f"{base}/config/{cid}/image"
         if "preview_url" not in data:
             data["preview_url"] = data["image_url"]
+    elif data.get("image_url") and "preview_url" not in data:
+        data["preview_url"] = data["image_url"]
 
     return data
 

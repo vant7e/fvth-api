@@ -99,6 +99,38 @@
     .portrait-lock-overlay.visible {
       display: flex;
     }
+    .config-load-error-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 25000;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 7, 8, 0.98);
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 24px;
+      font-family: var(--font-mono);
+      flex-direction: column;
+    }
+    .config-load-error-overlay.visible {
+      display: flex;
+    }
+    .config-load-error-inner {
+      max-width: 360px;
+    }
+    .config-load-error-msg {
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem;
+    }
+    .config-load-error-sub {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      opacity: 0.85;
+      margin: 0 0 1rem;
+    }
     .portrait-lock-inner {
       max-width: 320px;
     }
@@ -1754,6 +1786,13 @@
       <p class="portrait-lock-sub">请竖屏使用 · Rotate your device vertically</p>
     </div>
   </div>
+  <div id="configLoadError" class="config-load-error-overlay" aria-hidden="true" role="alertdialog" aria-labelledby="configLoadErrorTitle">
+    <div class="config-load-error-inner">
+      <p id="configLoadErrorTitle" class="config-load-error-msg">Configuration not found.</p>
+      <p class="config-load-error-sub">This link may be invalid or the config was never saved to the server.</p>
+      <button type="button" class="btn" id="configLoadErrorDismiss">Continue</button>
+    </div>
+  </div>
   <div class="match-app-shell">
   <div class="page-wrap">
     <header>
@@ -2292,9 +2331,19 @@
     return u.toString();
   }
 
-  /** After SAVE YOUR STRUCTURE: Wix match-02 + ?config= */
-  var DEPLOY_MATCH02_URL = 'https://www.fvthdesign.com/match-02';
+  /** After POST /config succeeds: open MATCH with ?config=. Override with window.FVTH_MATCH_URL (e.g. Wix /match). */
+  var FVTH_RAILWAY_API_DEFAULT = 'https://fvth-api-production.up.railway.app';
 
+  function getPostSaveMatchRedirectBase() {
+    try {
+      if (typeof window !== 'undefined' && window.FVTH_MATCH_URL && String(window.FVTH_MATCH_URL).trim()) {
+        return String(window.FVTH_MATCH_URL).trim().replace(/\/$/, '');
+      }
+    } catch (e) {}
+    return 'https://www.fvthdesign.com/match';
+  }
+
+  /** Persist/load configs: window.FVTH_CONFIG_API_BASE, else Railway production (Wix embed). */
   function getFvthConfigApiBase() {
     try {
       if (typeof window !== 'undefined' && window.FVTH_CONFIG_API_BASE) {
@@ -2309,10 +2358,11 @@
         window.location.origin &&
         window.location.protocol !== 'file:'
       ) {
-        return window.location.origin.replace(/\/$/, '');
+        var o = window.location.origin.replace(/\/$/, '');
+        if (/\.up\.railway\.app$/i.test(o)) return o;
       }
     } catch (e2) { /* ignore */ }
-    return '';
+    return FVTH_RAILWAY_API_DEFAULT;
   }
 
   function dobSlashToIso(slashDob) {
@@ -2360,9 +2410,11 @@
     }
     var beads = [];
     for (var si = 0; si < state.selected.length; si++) {
-      var b = state.selected[si].bead;
+      var sel = state.selected[si];
+      var b = sel.bead;
       if (!b) continue;
       beads.push({
+        fieldIndex: typeof sel.fieldIndex === 'number' ? sel.fieldIndex : null,
         id: b.id,
         code: b.code != null ? String(b.code) : '',
         name: String(b.name || b.id || '')
@@ -2392,6 +2444,45 @@
     };
   }
 
+  /** Body for POST /config: { config_id, data: { birth, beads, … } } — matches Railway + Wix examples. */
+  function buildConfigPostEnvelope(configId, extraFlat) {
+    var flat = buildStructureSaveBody(configId);
+    extraFlat = extraFlat || {};
+    for (var ek in extraFlat) {
+      if (Object.prototype.hasOwnProperty.call(extraFlat, ek)) flat[ek] = extraFlat[ek];
+    }
+    var cid = flat.config_id;
+    delete flat.config_id;
+    return {
+      config_id: cid,
+      data: flat
+    };
+  }
+
+  /** Fire-and-forget: persist config right after preview ID is assigned (before export video). */
+  function postConfigDraftSilently() {
+    var apiBase = getFvthConfigApiBase();
+    if (!apiBase || !state.persistConfigId) return;
+    var body = buildConfigPostEnvelope(state.persistConfigId);
+    fetch(apiBase + '/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+      .then(function(res) {
+        if (!res.ok) return res.text().then(function(t) { throw new Error(t || String(res.status)); });
+      })
+      .catch(function(err) {
+        console.warn('[FVTH] Config draft save failed:', err);
+      });
+  }
+
+  function schedulePostConfigDraft() {
+    setTimeout(function() {
+      postConfigDraftSilently();
+    }, 450);
+  }
+
   async function postStructureConfigAndRedirect() {
     var apiBase = getFvthConfigApiBase();
     if (!apiBase) {
@@ -2399,21 +2490,22 @@
       return;
     }
     var configId = state.persistConfigId || generateConfigId();
-    var body = buildStructureSaveBody(configId);
+    var extra = {};
     var L = deployExportState.blob;
     if (L && L.size) {
       try {
         var vdata = await blobToDataURL(L);
         if (vdata) {
-          body.video_base64 = vdata;
-          body.video_mime = L.type || deployExportState.mime || 'video/webm';
-          body.image_base64 = null;
+          extra.video_base64 = vdata;
+          extra.video_mime = L.type || deployExportState.mime || 'video/webm';
+          extra.image_base64 = null;
         }
       } catch (e) {
         console.warn('Preview video not attached:', e);
       }
     }
-    var url = apiBase + '/api/config';
+    var body = buildConfigPostEnvelope(configId, extra);
+    var url = apiBase + '/config';
     var res;
     try {
       res = await fetch(url, {
@@ -2432,7 +2524,243 @@
       alert('Save failed (HTTP ' + res.status + ').');
       return;
     }
-    window.location.href = DEPLOY_MATCH02_URL + '?config=' + encodeURIComponent(configId);
+    window.location.href = getPostSaveMatchRedirectBase() + '?config=' + encodeURIComponent(configId);
+  }
+
+  var _CONFIG_ID_RE_URL = /^FVTH-[0-9A-F]{5}$/;
+
+  function parseUrlConfigId() {
+    try {
+      var p = new URLSearchParams(window.location.search);
+      var c = p.get('config');
+      if (c && _CONFIG_ID_RE_URL.test(String(c).trim())) return String(c).trim();
+    } catch (e0) {}
+    return null;
+  }
+
+  function stripConfigQueryParam() {
+    try {
+      var u = new URL(window.location.href);
+      if (!u.searchParams.has('config')) return;
+      u.searchParams.delete('config');
+      window.history.replaceState({}, '', u.pathname + u.search + u.hash);
+    } catch (e) {}
+  }
+
+  function savedBirthToDateTimeInput(data) {
+    if (!data) return '';
+    var iso = (data.birth || '').trim();
+    if (!iso && data.dob) {
+      var parts = String(data.dob).split('/');
+      if (parts.length === 3) {
+        var y = parts[0];
+        var mo = parts[1].length === 1 ? '0' + parts[1] : parts[1];
+        var da = parts[2].length === 1 ? '0' + parts[2] : parts[2];
+        iso = y + '-' + mo + '-' + da;
+      }
+    }
+    if (!iso) return '';
+    var tm = (data.birth_time || data.dob_t || '12:00').trim();
+    var tp = tm.split(':');
+    var hh = parseInt(tp[0], 10);
+    var mm = parseInt(tp[1] != null ? tp[1] : '0', 10);
+    if (isNaN(hh)) hh = 12;
+    if (isNaN(mm)) mm = 0;
+    function pad(n) {
+      return n < 10 ? '0' + n : String(n);
+    }
+    return iso + 'T' + pad(hh) + ':' + pad(mm);
+  }
+
+  function showConfigNotFoundUi(message) {
+    stripConfigQueryParam();
+    var el = document.getElementById('configLoadError');
+    if (el) {
+      el.classList.add('visible');
+      el.setAttribute('aria-hidden', 'false');
+      var title = document.getElementById('configLoadErrorTitle');
+      if (title) title.textContent = message || 'Configuration not found.';
+    }
+    var cs = document.getElementById('configStatus');
+    if (cs) cs.textContent = message || 'Config not found.';
+  }
+
+  function hideConfigNotFoundUi() {
+    var el = document.getElementById('configLoadError');
+    if (el) {
+      el.classList.remove('visible');
+      el.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  async function hydrateFromSavedConfig(data) {
+    var dateStr = savedBirthToDateTimeInput(data);
+    if (!dateStr) {
+      showConfigNotFoundUi('Saved config is missing birth data.');
+      throw new Error('missing birth');
+    }
+    var d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      showConfigNotFoundUi('Invalid birth data in saved config.');
+      throw new Error('invalid date');
+    }
+
+    resetForReboot({ skipApplyStage: true });
+
+    var dateInput = document.getElementById('birthDate');
+    if (dateInput) dateInput.value = dateStr;
+    state.dateStr = dateStr;
+    state.persistConfigId = (data.config_id && _CONFIG_ID_RE_URL.test(String(data.config_id).trim()))
+      ? String(data.config_id).trim()
+      : parseUrlConfigId();
+    state.deployShareCode = data.share_code || null;
+
+    var empty = document.getElementById('emptyState');
+    if (empty) empty.style.display = 'none';
+
+    var payload = {
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      day: d.getDate(),
+      hour: d.getHours()
+    };
+
+    var baziData;
+    try {
+      var res = await fetch(BAZI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      baziData = await res.json();
+    } catch (e) {
+      showConfigNotFoundUi('Bazi API unavailable. Cannot restore configuration.');
+      throw e;
+    }
+
+    var an = baziData.analysis || {};
+    state.apiStabilityIndex = an.stability_index != null && !isNaN(Number(an.stability_index))
+      ? Number(an.stability_index) : null;
+    state.apiAllocation = baziData.allocation != null ? baziData.allocation : null;
+    var mapped = mapApiBeads(baziData.beads || []);
+    var sorted = applyAllocationSort(mapped, baziData.allocation);
+    state.beads = normalizeBeadsForRendering(sorted);
+    try {
+      var modCsv = await import('./bead_3d_runtime.js');
+      var tableCsv = await modCsv.loadBeadTable();
+      applyBeadModelFromCsvTable(state.beads, tableCsv);
+    } catch (eCsv) {}
+
+    state.apiUi = {
+      resonance_class: an.resonance_class || null,
+      element_bias: an.element_bias || null,
+      stability_index: state.apiStabilityIndex,
+      config_status: state.beads.length + ' / 24 UNITS'
+    };
+    state.summary = buildSummaryFromApi(baziData);
+    state.unitQuantities = {};
+    state.mode = 'assembly';
+    state.selected = [];
+    var savedBeads = data.beads || [];
+    for (var si = 0; si < savedBeads.length; si++) {
+      var sb = savedBeads[si];
+      if (!sb || sb.id == null) continue;
+      var fi = typeof sb.fieldIndex === 'number' ? sb.fieldIndex : -1;
+      var bead = null;
+      if (fi >= 0 && fi < state.beads.length && String(state.beads[fi].id) === String(sb.id)) {
+        bead = state.beads[fi];
+      } else {
+        for (var j = 0; j < state.beads.length; j++) {
+          if (String(state.beads[j].id) === String(sb.id)) {
+            bead = state.beads[j];
+            fi = j;
+            break;
+          }
+        }
+      }
+      if (bead) state.selected.push({ fieldIndex: fi, bead: bead });
+    }
+
+    if (!state.selected.length) {
+      showConfigNotFoundUi('Saved bracelet has no matching beads.');
+      throw new Error('no beads');
+    }
+
+    state.stage = 'preview';
+    state.renderMode = 'final';
+
+    if (baziData.profile) applyProfileToRadar(baziData.profile);
+
+    document.getElementById('btnRegenerate').style.display = 'inline-block';
+    var sb = document.getElementById('summaryBlock');
+    sb.style.display = 'block';
+    var ab = document.getElementById('assemblyBlock');
+    if (ab) ab.style.display = 'block';
+    document.getElementById('summaryPrimary').textContent = state.summary.primary;
+    document.getElementById('summarySecondary').textContent = state.summary.secondary;
+    document.getElementById('summaryBalance').textContent = state.summary.balance;
+    document.getElementById('summaryClass').textContent = state.summary.configClass;
+
+    var section = document.getElementById('resultSection');
+    if (section) section.classList.add('boot-phase');
+
+    runBootSequence(dateStr, function() {
+      renderBeads(state.beads);
+      renderAssemblyList();
+      renderAssemblyBraceletMini();
+      updateConfigStatus();
+      if (state.apiUi) {
+        document.getElementById('resonance').textContent = state.apiUi.resonance_class || '—';
+        document.getElementById('elementBias').textContent = state.apiUi.element_bias || '—';
+        document.getElementById('stability').textContent = state.apiUi.stability_index != null ? (state.apiUi.stability_index + '%') : '—';
+        if (state.apiUi.config_status) document.getElementById('configStatus').textContent = state.apiUi.config_status;
+      }
+      updateRadarFromComposition();
+      applyStage();
+    });
+  }
+
+  async function tryLoadSavedConfigOnBoot() {
+    var cid = parseUrlConfigId();
+    if (!cid) return false;
+
+    var apiBase = getFvthConfigApiBase();
+    if (!apiBase) {
+      showConfigNotFoundUi('Set window.FVTH_CONFIG_API_BASE to load shared configs (or open match from the API origin).');
+      return true;
+    }
+
+    var cs = document.getElementById('configStatus');
+    if (cs) cs.textContent = 'Loading saved configuration…';
+
+    var res;
+    try {
+      res = await fetch(apiBase + '/config/' + encodeURIComponent(cid));
+    } catch (e) {
+      showConfigNotFoundUi('Could not reach config server.');
+      return true;
+    }
+
+    if (!res.ok) {
+      showConfigNotFoundUi(res.status === 404 ? 'Configuration not found.' : 'Load failed (HTTP ' + res.status + ').');
+      return true;
+    }
+
+    var data;
+    try {
+      data = await res.json();
+    } catch (e2) {
+      showConfigNotFoundUi('Invalid config response.');
+      return true;
+    }
+
+    try {
+      await hydrateFromSavedConfig(data);
+    } catch (e3) {
+      return true;
+    }
+    return true;
   }
 
   /** Collect candidate image paths/URLs (multi-image: API `images` or | in `image`). */
@@ -3361,8 +3689,10 @@
 
   function renderBraceletPreview() {
     var ring = document.getElementById('braceletRing');
-    state.persistConfigId = generateConfigId();
-    state.deployShareCode = generateShareCode();
+    if (!state.persistConfigId) {
+      state.persistConfigId = generateConfigId();
+      state.deployShareCode = generateShareCode();
+    }
     mountBraceletWebGL(ring, 'bracelet-ring', 'bracelet3dInstance', true);
     var codeEl = document.getElementById('braceletConfigCode');
     if (codeEl) codeEl.innerHTML = 'FVTH CONFIG<br><strong>' + state.persistConfigId + '</strong>';
@@ -4199,7 +4529,8 @@
   }
 
   // ——— Full reset for regenerate: clear container, panel, diagnostics, state ———
-  function resetForReboot() {
+  function resetForReboot(opts) {
+    opts = opts || {};
     state.selectedIndex = -1;
     state.hoverIndex = -1;
     state.unitQuantities = {};
@@ -4209,6 +4540,8 @@
     state.apiUi = null;
     state.apiAllocation = null;
     state.apiStabilityIndex = null;
+    state.persistConfigId = null;
+    state.deployShareCode = null;
     disposeBracelet3dPreview();
     disposeBeadField3d();
     disposeAssemblyBracelet3d();
@@ -4253,8 +4586,10 @@
     if (bootVisuals) bootVisuals.style.opacity = '1';
     state.stage = 'match';
     state.renderMode = 'assembly';
-    applyModeToUI();
-    applyStage();
+    if (!opts.skipApplyStage) {
+      applyModeToUI();
+      applyStage();
+    }
   }
 
   // ——— Boot sequence ~1.5s with visual feedback, then callback ———
@@ -4924,9 +5259,12 @@
       if (am) am.textContent = 'Add beads to the bracelet (click units), then generate.';
       return;
     }
+    state.persistConfigId = generateConfigId();
+    state.deployShareCode = generateShareCode();
     state.renderMode = 'final';
     state.stage = 'preview';
     applyStage();
+    schedulePostConfigDraft();
   });
   document.getElementById('btnDeployStructure').addEventListener('click', function() {
     var btn = document.getElementById('btnDeployStructure');
@@ -5054,7 +5392,17 @@
   syncAssemblyPlacement();
   syncPortraitLock();
 
-  applyModeToUI();
+  var dismissCfg = document.getElementById('configLoadErrorDismiss');
+  if (dismissCfg) {
+    dismissCfg.addEventListener('click', function() {
+      hideConfigNotFoundUi();
+    });
+  }
+
+  (async function bootMatchPage() {
+    await tryLoadSavedConfigOnBoot();
+    applyModeToUI();
+  })();
 })();
   </script>
 </body>
