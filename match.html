@@ -3577,6 +3577,18 @@
     ctx.restore();
   }
 
+  /** Deploy preview: black background + centered bracelet WebGL only (no header, text, radar, panels). */
+  function drawDeployBeadsOnlyFrame(ctx, W, H, glCanvas) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    if (!glCanvas || !glCanvas.width) return;
+    var margin = Math.round(Math.min(W, H) * 0.05);
+    var side = Math.min(W - 2 * margin, H - 2 * margin);
+    var x0 = (W - side) / 2;
+    var y0 = (H - side) / 2;
+    ctx.drawImage(glCanvas, x0, y0, side, side);
+  }
+
   /** 9:16 deploy frame: full-black canvas; inset rounded frame (stroke only) = layout zone; upper = config + 3D, lower = energy profile. */
   function drawDeployPosterFrame(ctx, W, H, inset, glCanvas, shareCode) {
     ctx.fillStyle = '#000000';
@@ -3839,12 +3851,11 @@
 
     var shareCode = state.deployShareCode || generateShareCode();
     var narrow = matchIsMobileLayout();
-    /* Narrow viewports: smaller canvas + fewer frames + higher capture fps = much shorter wall-clock time. */
+    /* 9:16 output; ~1s phone / ~2s desktop loop; beads-only composite (see drawDeployBeadsOnlyFrame). */
     var W = narrow ? 720 : 1080;
     var H = narrow ? 1280 : 1920;
-    var inset = narrow ? Math.round(46 * (W / 1080)) : 46;
-    var totalFrames = narrow ? 22 : 34;
-    var fps = narrow ? 22 : 17;
+    var totalFrames = narrow ? 24 : 36;
+    var fps = narrow ? 24 : 18;
     var videoBitsPerSecond = narrow ? 2800000 : 4500000;
     var host = document.createElement('div');
     host.setAttribute('aria-hidden', 'true');
@@ -3910,7 +3921,7 @@
           }
           var tSec = frame / fps;
           inst.renderFrameAt(tSec);
-          drawDeployPosterFrame(ctx, W, H, inset, glCanvas, shareCode);
+          drawDeployBeadsOnlyFrame(ctx, W, H, glCanvas);
           frame++;
           setTimeout(tickFrame, 1000 / fps);
         }
@@ -4336,6 +4347,7 @@
       }).then(function() {
         return import('./match_bead_field_engine.js').then(function(eng) {
           return eng.syncMatchBeadField(beads, state.radialPositions, gen, {
+            unitMapBeadScale: matchIsMobileLayout() ? 0.9 : 1,
             getGen: function() {
               return beadField3dGen;
             },

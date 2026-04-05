@@ -363,7 +363,9 @@ export async function syncMatchBeadField(beads, positions, gen, ctx) {
     const diaPx = FIELD_DOM_BEAD_DIA_PX[i % FIELD_DOM_BEAD_DIA_PX.length];
     const beadWorldDiam = (diaPx / fh) * worldH;
     const unitDiam = BEAD_SPHERE_RADIUS * 2;
-    root.scale.setScalar(beadWorldDiam / unitDiam);
+    const unitScale =
+      typeof ctx.unitMapBeadScale === 'number' ? ctx.unitMapBeadScale : 1;
+    root.scale.setScalar((beadWorldDiam / unitDiam) * unitScale);
 
     fieldMeshGroup.add(root);
   }

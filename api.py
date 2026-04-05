@@ -260,11 +260,12 @@ def save_config(req: ConfigRequest):
 
 @app.get("/config/{config_id}/video")
 def get_config_video(config_id: str):
+    """Stream stored preview video (video/mp4 or video/webm); not JSON."""
     cid = _validate_config_id(config_id)
     path, media = _find_preview_video(cid)
     if not path:
         raise HTTPException(status_code=404, detail="Video not found")
-    return FileResponse(path, media_type=media)
+    return FileResponse(path, media_type=media, filename=path.name)
 
 
 @app.get("/config/{config_id}/image")
