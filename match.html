@@ -144,17 +144,38 @@
     }
 
     /*
-     * Wix wide iframe on phone: inner 100vw is often still ~980 — CSS-only scale fails. syncEmbedScaleFactor() sets --match-embed-scale from clientWidth / 980.
+     * Wix embed: use zoom on <html> so layout width shrinks with scale — avoids transform+overflow-x clipping the sides.
+     * Firefox: no zoom — fallback to body transform + horizontal scroll inside iframe (rare on mobile).
      */
     html.match-embed-phone-wide-iframe {
-      overflow-x: hidden;
+      zoom: var(--match-embed-scale);
+      overflow-x: visible;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+      min-height: 100%;
       --match-embed-scale: 1;
     }
     html.match-embed-phone-wide-iframe body {
-      transform: scale(var(--match-embed-scale));
-      transform-origin: top left;
-      width: var(--match-shell-max-width);
-      min-height: calc(100vh / var(--match-embed-scale));
+      width: 100%;
+      max-width: var(--match-shell-max-width);
+      margin: 0 auto;
+      min-height: 100vh;
+      overflow-x: visible;
+      overflow-y: visible;
+    }
+    @supports not (zoom: 0.5) {
+      html.match-embed-phone-wide-iframe {
+        zoom: normal;
+        overflow-x: auto;
+      }
+      html.match-embed-phone-wide-iframe body {
+        transform: scale(var(--match-embed-scale));
+        transform-origin: top left;
+        width: var(--match-shell-max-width);
+        max-width: none;
+        min-height: calc(100vh / var(--match-embed-scale));
+      }
     }
 
     .page-wrap {
@@ -1882,6 +1903,38 @@
     } catch (e2) {
       el.style.removeProperty('--match-embed-scale');
     }
+    notifyEmbedContentHeightToParent();
+  }
+
+  /** Tell Wix parent suggested iframe height (zoom path: scrollHeight is already scaled; FF transform fallback: use max). */
+  var embedHeightNotifyTimer = null;
+  function notifyEmbedContentHeightToParent() {
+    try {
+      if (!document.documentElement.classList.contains('match-embed-phone-wide-iframe')) return;
+      if (!window.parent || window.parent === window) return;
+      var hLayout = Math.max(
+        document.documentElement.scrollHeight || 0,
+        document.body ? document.body.scrollHeight : 0
+      );
+      var brH = 0;
+      try {
+        brH = document.documentElement.getBoundingClientRect().height || 0;
+      } catch (e4) { /* ignore */ }
+      var h = Math.ceil(Math.max(hLayout, brH));
+      h = Math.min(Math.max(h, 320), 20000);
+      window.parent.postMessage(
+        { type: 'FVTH_EMBED_CONTENT_HEIGHT', height: h, layoutHeight: hLayout },
+        '*'
+      );
+    } catch (e3) { /* ignore */ }
+  }
+
+  function scheduleEmbedHeightNotify() {
+    if (embedHeightNotifyTimer) clearTimeout(embedHeightNotifyTimer);
+    embedHeightNotifyTimer = setTimeout(function() {
+      embedHeightNotifyTimer = null;
+      notifyEmbedContentHeightToParent();
+    }, 120);
   }
 
   // ——— Seeded RNG (deterministic from birth date) ———
@@ -4749,8 +4802,10 @@
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(function() {
       syncEmbedScaleFactor();
+      scheduleEmbedHeightNotify();
     });
   }
+  scheduleEmbedHeightNotify();
   syncAssemblyPlacement();
   syncPortraitLock();
 
