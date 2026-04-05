@@ -144,32 +144,19 @@
     }
 
     /*
-     * Wix / embed: phone + layout viewport ~980px — media queries may not match; class from <head> script + syncEmbedPhoneWideIframe().
-     * Override: html { --match-embed-shell-max: 320px; }
+     * Wix wide iframe on phone: layout width ~980px — scale full desktop canvas to viewport (replaces narrow-shell + grid hacks).
+     * Class: <head> script + syncEmbedPhoneWideIframe().
      */
     html.match-embed-phone-wide-iframe {
-      --match-embed-shell-max: 310px;
-    }
-    html.match-embed-phone-wide-iframe .match-app-shell {
-      max-width: min(var(--match-shell-max-width), var(--match-embed-shell-max));
-      width: 100%;
-      padding-left: 8px;
-      padding-right: 8px;
       overflow-x: hidden;
+      --match-embed-scale: calc(100vw / var(--match-shell-max-width));
     }
-    html.match-embed-phone-wide-iframe .bracelet-preview.visible .bracelet-ring {
-      width: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
-      height: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
-      max-width: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
-      max-height: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
-    }
-    /* Wix iframe: (max-width:900px) may not fire — force stacked layout like narrow breakpoint */
-    html.match-embed-phone-wide-iframe .page-wrap {
-      grid-template-columns: 1fr;
-      grid-template-areas:
-        "header"
-        "main"
-        "sidebar";
+    html.match-embed-phone-wide-iframe body {
+      transform: scale(var(--match-embed-scale));
+      transform-origin: top left;
+      width: var(--match-shell-max-width);
+      /* Unscaled height so after scale the page can fill the visible viewport */
+      min-height: calc(100vh * var(--match-shell-max-width) / 100vw);
     }
 
     .page-wrap {
@@ -1812,7 +1799,7 @@
     }
   }
 
-  /** Wix: phone + layout viewport wide (~980) — cap shell; do not apply on real narrow mobile tab (innerWidth ≤ 900). */
+  /** Wix: phone + wide layout viewport — toggle scale-to-fit (see html.match-embed-phone-wide-iframe CSS). */
   function syncEmbedPhoneWideIframe() {
     var el = document.documentElement;
     try {
@@ -1824,19 +1811,11 @@
       var phoneLike = matchIsPhoneUserAgent();
       if (wideLayoutViewport && (narrowDevice || phoneLike)) {
         el.classList.add('match-embed-phone-wide-iframe');
-        var vv = window.visualViewport;
-        if (vv && vv.width > 0 && vv.width + 24 < window.innerWidth) {
-          el.style.setProperty('--match-embed-shell-max', Math.max(260, Math.floor(vv.width)) + 'px');
-        } else {
-          el.style.removeProperty('--match-embed-shell-max');
-        }
       } else {
         el.classList.remove('match-embed-phone-wide-iframe');
-        el.style.removeProperty('--match-embed-shell-max');
       }
     } catch (err) {
       el.classList.remove('match-embed-phone-wide-iframe');
-      el.style.removeProperty('--match-embed-shell-max');
     }
   }
 
