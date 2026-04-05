@@ -14,12 +14,15 @@
   }
   </script>
   <!-- Wix / wide iframe on phone: innerWidth stays ~980 so media queries may not fire; add class before paint -->
-  <!-- Wix matchEmbedWrap: use ?fvth_wix_mobile=1 or ?fvth_container=matchEmbedWrap — fixed 320×9:16 phone profile (see .match-fvth-wix-mobile-frame) -->
+  <!-- Wix: ?fvth_wix_mobile=auto — 手机宽 iframe 才固定 320；电脑全宽。?=1 或 fvth_container=matchEmbedWrap — 始终 320 -->
   <script>
   (function () {
     try {
       if (typeof window === 'undefined') return;
       var q = window.location.search || '';
+      if (q.indexOf('fvth_wix_mobile=auto') !== -1) {
+        document.documentElement.classList.add('match-fvth-wix-mobile-auto');
+      }
       if (q.indexOf('fvth_wix_mobile=1') !== -1 || q.indexOf('fvth_container=matchEmbedWrap') !== -1) {
         document.documentElement.classList.add('match-fvth-wix-mobile-frame');
       }
@@ -1839,8 +1842,28 @@
     }
   }
 
+  /** Wix ?fvth_wix_mobile=auto: 仅当真机窄屏或手机 UA 且 iframe 逻辑宽 ≥901px 时启用 .match-fvth-wix-mobile-frame（固定 320）；桌面全宽不启用。 */
+  function syncFvthWixMobileAuto() {
+    var el = document.documentElement;
+    try {
+      if (!el.classList.contains('match-fvth-wix-mobile-auto')) return;
+      var wideLayoutViewport = window.matchMedia('(min-width: 901px)').matches;
+      var narrowDevice = false;
+      try {
+        narrowDevice = window.matchMedia('(max-device-width: 900px)').matches;
+      } catch (e2) { /* ignore */ }
+      var phoneLike = matchIsPhoneUserAgent();
+      if (wideLayoutViewport && (narrowDevice || phoneLike)) {
+        el.classList.add('match-fvth-wix-mobile-frame');
+      } else {
+        el.classList.remove('match-fvth-wix-mobile-frame');
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   /** Wix: phone + wide layout viewport — toggle scale-to-fit (see html.match-embed-phone-wide-iframe CSS). */
   function syncEmbedPhoneWideIframe() {
+    syncFvthWixMobileAuto();
     var el = document.documentElement;
     try {
       var fixedWix = el.classList.contains('match-fvth-wix-mobile-frame');
