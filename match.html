@@ -14,10 +14,17 @@
   }
   </script>
   <!-- Wix / wide iframe on phone: innerWidth stays ~980 so media queries may not fire; add class before paint -->
+  <!-- Wix matchEmbedWrap: use ?fvth_wix_mobile=1 or ?fvth_container=matchEmbedWrap — fixed 320×9:16 phone profile (see .match-fvth-wix-mobile-frame) -->
   <script>
   (function () {
     try {
-      if (typeof window === 'undefined' || window.innerWidth <= 900) return;
+      if (typeof window === 'undefined') return;
+      var q = window.location.search || '';
+      if (q.indexOf('fvth_wix_mobile=1') !== -1 || q.indexOf('fvth_container=matchEmbedWrap') !== -1) {
+        document.documentElement.classList.add('match-fvth-wix-mobile-frame');
+      }
+      if (window.innerWidth <= 900) return;
+      if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) return;
       var ua = navigator.userAgent || '';
       if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return;
       if (!/iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return;
@@ -30,6 +37,9 @@
     :root {
       /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
       --match-shell-max-width: 980px;
+      /* Wix matchEmbedWrap fixed phone frame (logical width 320px, portrait 9:16) */
+      --fvth-wix-mobile-w: 320px;
+      --fvth-wix-mobile-min-h: calc(320px * 16 / 9);
       /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
       --match-content-pad-x: 1.5rem;
       --match-content-pad-y: 1.25rem;
@@ -200,6 +210,14 @@
         grid-template-columns: 1fr;
         grid-template-areas: "header" "main" "sidebar";
       }
+    }
+    /* Wix #matchEmbedWrap: same stacked layout regardless of iframe innerWidth (paired with zoom or narrow iframe) */
+    html.match-fvth-wix-mobile-frame .page-wrap {
+      grid-template-columns: 1fr;
+      grid-template-areas: "header" "main" "sidebar";
+    }
+    html.match-fvth-wix-mobile-frame .match-app-shell {
+      min-height: var(--fvth-wix-mobile-min-h);
     }
 
     /* --- Header --- */
@@ -1799,6 +1817,9 @@
    * while the device is a phone — (max-device-width) in CSS; this mirrors that for JS (assembly mount, export, etc.).
    */
   function matchIsMobileLayout() {
+    try {
+      if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) return true;
+    } catch (e0) { /* ignore */ }
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     if (window.matchMedia('(max-width: 900px)').matches) return true;
     try {
@@ -1822,13 +1843,16 @@
   function syncEmbedPhoneWideIframe() {
     var el = document.documentElement;
     try {
+      var fixedWix = el.classList.contains('match-fvth-wix-mobile-frame');
       var wideLayoutViewport = window.matchMedia('(min-width: 901px)').matches;
       var narrowDevice = false;
       try {
         narrowDevice = window.matchMedia('(max-device-width: 900px)').matches;
       } catch (e2) { /* ignore */ }
       var phoneLike = matchIsPhoneUserAgent();
-      if (wideLayoutViewport && (narrowDevice || phoneLike)) {
+      if (fixedWix && wideLayoutViewport) {
+        el.classList.add('match-embed-phone-wide-iframe');
+      } else if (!fixedWix && wideLayoutViewport && (narrowDevice || phoneLike)) {
         el.classList.add('match-embed-phone-wide-iframe');
       } else {
         el.classList.remove('match-embed-phone-wide-iframe');
@@ -1840,7 +1864,9 @@
 
   /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
   var MATCH_EMBED_SHELL_PX = 980;
-  /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. */
+  /** Wix matchEmbedWrap fixed phone column width (sync with --fvth-wix-mobile-w). */
+  var FVTH_WIX_MOBILE_WIDTH_PX = 320;
+  /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. Ignored in .match-fvth-wix-mobile-frame. */
   var embedParentViewportWidthPx = null;
 
   function embedParentOriginAllowed(origin) {
@@ -1870,9 +1896,43 @@
 
   function onEmbedParentMessage(event) {
     if (!embedParentOriginAllowed(event.origin)) return;
-    var w = parseEmbedPostMessageData(event.data);
-    if (w == null) return;
-    embedParentViewportWidthPx = w;
+    var data = event.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (eParse) {
+        return;
+      }
+    }
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'FVTH_EMBED_CONTAINER' && (data.id === 'matchEmbedWrap' || data.container === 'matchEmbedWrap')) {
+      document.documentElement.classList.add('match-fvth-wix-mobile-frame');
+      embedParentViewportWidthPx = null;
+      syncEmbedPhoneWideIframe();
+      syncEmbedScaleFactor();
+      scheduleEmbedHeightNotify();
+      syncAssemblyPlacement();
+      syncPortraitLock();
+      return;
+    }
+    if (data.container === 'matchEmbedWrap' || data.id === 'matchEmbedWrap') {
+      document.documentElement.classList.add('match-fvth-wix-mobile-frame');
+      embedParentViewportWidthPx = null;
+    }
+    var w = parseEmbedPostMessageData(data);
+    if (w == null) {
+      if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) {
+        syncEmbedPhoneWideIframe();
+        syncEmbedScaleFactor();
+        scheduleEmbedHeightNotify();
+        syncAssemblyPlacement();
+        syncPortraitLock();
+      }
+      return;
+    }
+    if (!document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) {
+      embedParentViewportWidthPx = w;
+    }
     syncEmbedPhoneWideIframe();
     syncEmbedScaleFactor();
   }
@@ -1885,7 +1945,10 @@
         return;
       }
       var cw;
-      if (embedParentViewportWidthPx != null && embedParentViewportWidthPx > 0) {
+      var fixedWix = el.classList.contains('match-fvth-wix-mobile-frame');
+      if (fixedWix) {
+        cw = FVTH_WIX_MOBILE_WIDTH_PX;
+      } else if (embedParentViewportWidthPx != null && embedParentViewportWidthPx > 0) {
         cw = embedParentViewportWidthPx;
       } else {
         cw = el.clientWidth || window.innerWidth || MATCH_EMBED_SHELL_PX;
@@ -1922,10 +1985,15 @@
       } catch (e4) { /* ignore */ }
       var h = Math.ceil(Math.max(hLayout, brH));
       h = Math.min(Math.max(h, 320), 20000);
-      window.parent.postMessage(
-        { type: 'FVTH_EMBED_CONTENT_HEIGHT', height: h, layoutHeight: hLayout },
-        '*'
-      );
+      var payload = {
+        type: 'FVTH_EMBED_CONTENT_HEIGHT',
+        height: h,
+        layoutHeight: hLayout
+      };
+      if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) {
+        payload.fvthMobileFrame = { w: FVTH_WIX_MOBILE_WIDTH_PX, aspect: '9:16', minHeight: Math.round(FVTH_WIX_MOBILE_WIDTH_PX * 16 / 9) };
+      }
+      window.parent.postMessage(payload, '*');
     } catch (e3) { /* ignore */ }
   }
 
