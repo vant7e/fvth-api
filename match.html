@@ -40,9 +40,7 @@
     :root {
       /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
       --match-shell-max-width: 980px;
-      /* Wix fixed phone: layout target for zoom/caps (280 ≈ 肉眼看 320 列宽；宽 iframe 下 vw/pad 会显胖) */
-      --fvth-wix-mobile-w: 280px;
-      --fvth-wix-mobile-min-h: calc(280px * 16 / 9);
+      /* Desktop only above. Wix 手机嵌入版心在 html.match-fvth-wix-mobile-frame 内单独设为 680px，勿改此处影响电脑端 */
       /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
       --match-content-pad-x: 1.5rem;
       --match-content-pad-y: 1.25rem;
@@ -219,30 +217,32 @@
       grid-template-columns: 1fr;
       grid-template-areas: "header" "main" "sidebar";
     }
+    /*
+     * Wix 手机嵌入（?fvth_wix_mobile=…）：版心 680px，与电脑 980px 完全分离；仅带 .match-fvth-wix-mobile-frame 时生效
+     */
+    html.match-fvth-wix-mobile-frame {
+      --fvth-wix-shell-px: 680px;
+      --match-shell-max-width: var(--fvth-wix-shell-px);
+      --fvth-wix-mobile-min-h: calc(680px * 16 / 9);
+      --match-bead-plate-max: min(420px, var(--fvth-wix-shell-px));
+      --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
+      --match-content-pad-x: 1rem;
+    }
     html.match-fvth-wix-mobile-frame .match-app-shell {
       min-height: var(--fvth-wix-mobile-min-h);
       padding-left: 0;
       padding-right: 0;
     }
-    /*
-     * Wix 强制手机：版心必须等于 --fvth-wix-mobile-w（否则字/块仍按 980px 排版，vw 按 iframe≈980 算会爆宽）
-     */
-    html.match-fvth-wix-mobile-frame {
-      --match-shell-max-width: var(--fvth-wix-mobile-w);
-      --match-bead-plate-max: min(420px, var(--fvth-wix-mobile-w));
-      --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
-      --match-content-pad-x: 1rem;
-    }
     html.match-fvth-wix-mobile-frame .bracelet-preview .bracelet-ring {
-      max-width: min(220px, var(--fvth-wix-mobile-w));
-      max-height: min(220px, var(--fvth-wix-mobile-w));
+      max-width: min(220px, var(--fvth-wix-shell-px));
+      max-height: min(220px, var(--fvth-wix-shell-px));
     }
     html.match-fvth-wix-mobile-frame .deploy-export-vid-wrap {
-      max-width: min(400px, var(--fvth-wix-mobile-w));
+      max-width: min(400px, var(--fvth-wix-shell-px));
     }
     html.match-fvth-wix-mobile-frame .deploy-export-hint,
     html.match-fvth-wix-mobile-frame .deploy-export-dl-note {
-      max-width: var(--fvth-wix-mobile-w);
+      max-width: var(--fvth-wix-shell-px);
     }
 
     /* --- Header --- */
@@ -1491,7 +1491,7 @@
 
     /*
      * Wix: iframe innerWidth is often ~980px so (max-width:900px) is false — mobile rules above never run.
-     * Duplicate them for html.match-fvth-wix-mobile-frame; use --fvth-wix-mobile-w instead of vw for preview ring.
+     * Duplicate them for html.match-fvth-wix-mobile-frame; use --fvth-wix-shell-px instead of vw for preview ring.
      */
     html.match-fvth-wix-mobile-frame .result-section {
       -webkit-overflow-scrolling: touch;
@@ -1529,10 +1529,10 @@
       gap: 0.55rem;
     }
     html.match-fvth-wix-mobile-frame .bracelet-preview.visible .bracelet-ring {
-      width: min(var(--fvth-wix-mobile-w), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
-      height: min(var(--fvth-wix-mobile-w), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
-      max-width: min(var(--fvth-wix-mobile-w), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
-      max-height: min(var(--fvth-wix-mobile-w), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      width: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      height: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      max-width: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      max-height: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
     }
     html.match-fvth-wix-mobile-frame .bracelet-preview.visible .preview-actions {
       flex-direction: column;
@@ -2019,8 +2019,8 @@
 
   /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
   var MATCH_EMBED_SHELL_PX = 980;
-  /** Wix matchEmbedWrap fixed phone column width (sync with --fvth-wix-mobile-w). */
-  var FVTH_WIX_MOBILE_WIDTH_PX = 280;
+  /** Wix 手机嵌入版心宽度（与 html.match-fvth-wix-mobile-frame 内 --fvth-wix-shell-px 一致；电脑端仍用 MATCH_EMBED_SHELL_PX 980） */
+  var FVTH_WIX_MOBILE_WIDTH_PX = 680;
   /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. Ignored in .match-fvth-wix-mobile-frame. */
   var embedParentViewportWidthPx = null;
 
