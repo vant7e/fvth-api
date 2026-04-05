@@ -227,6 +227,8 @@
       --match-bead-plate-max: min(420px, var(--fvth-wix-shell-px));
       --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
       --match-content-pad-x: 1rem;
+      /* 版心变窄后根字号仍 16px 会显得字偏大；按 680/980 比例缩小，下限 13px 保证可读 */
+      font-size: clamp(13px, calc(16px * var(--fvth-wix-shell-px) / 980px), 15px);
     }
     html.match-fvth-wix-mobile-frame .match-app-shell {
       min-height: var(--fvth-wix-mobile-min-h);
