@@ -288,6 +288,17 @@ def save_config_post_alias(body: dict[str, Any] = Body(...)):
     return _save_config_core(req)
 
 
+@app.get("/config")
+def config_api_help():
+    """Browser GET on /config is not a load — use GET /config/{FVTH-xxxxx} after saving."""
+    return {
+        "service": "FVTH config API",
+        "save": "POST /config — JSON body with config_id (and optional data, video_base64, …)",
+        "load": "GET /config/{config_id} — example: /config/FVTH-A1B2C",
+        "why_method_not_allowed": "Opening /config in the address bar sends GET; saving requires POST from your app.",
+    }
+
+
 @app.get("/config/{config_id}/video")
 def get_config_video(config_id: str):
     """Stream stored preview video (video/mp4 or video/webm); not JSON."""
