@@ -144,19 +144,17 @@
     }
 
     /*
-     * Wix wide iframe on phone: layout width ~980px — scale full desktop canvas to viewport (replaces narrow-shell + grid hacks).
-     * Class: <head> script + syncEmbedPhoneWideIframe().
+     * Wix wide iframe on phone: inner 100vw is often still ~980 — CSS-only scale fails. syncEmbedScaleFactor() sets --match-embed-scale from clientWidth / 980.
      */
     html.match-embed-phone-wide-iframe {
       overflow-x: hidden;
-      --match-embed-scale: calc(100vw / var(--match-shell-max-width));
+      --match-embed-scale: 1;
     }
     html.match-embed-phone-wide-iframe body {
       transform: scale(var(--match-embed-scale));
       transform-origin: top left;
       width: var(--match-shell-max-width);
-      /* Unscaled height so after scale the page can fill the visible viewport */
-      min-height: calc(100vh * var(--match-shell-max-width) / 100vw);
+      min-height: calc(100vh / var(--match-embed-scale));
     }
 
     .page-wrap {
@@ -1816,6 +1814,32 @@
       }
     } catch (err) {
       el.classList.remove('match-embed-phone-wide-iframe');
+    }
+  }
+
+  /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
+  var MATCH_EMBED_SHELL_PX = 980;
+
+  function syncEmbedScaleFactor() {
+    var el = document.documentElement;
+    try {
+      if (!el.classList.contains('match-embed-phone-wide-iframe')) {
+        el.style.removeProperty('--match-embed-scale');
+        return;
+      }
+      var cw = el.clientWidth || window.innerWidth || MATCH_EMBED_SHELL_PX;
+      if (window.visualViewport && window.visualViewport.width > 0) {
+        cw = Math.min(cw, window.visualViewport.width);
+      }
+      if (typeof screen !== 'undefined' && screen.width > 0 && screen.width < 900) {
+        cw = Math.min(cw, screen.width);
+      }
+      var s = cw / MATCH_EMBED_SHELL_PX;
+      if (s > 1) s = 1;
+      if (s < 0.12) s = 0.12;
+      el.style.setProperty('--match-embed-scale', String(s));
+    } catch (e2) {
+      el.style.removeProperty('--match-embed-scale');
     }
   }
 
@@ -4668,6 +4692,7 @@
     if (layoutResizeTimer) clearTimeout(layoutResizeTimer);
     layoutResizeTimer = setTimeout(function() {
       syncEmbedPhoneWideIframe();
+      syncEmbedScaleFactor();
       syncAssemblyPlacement();
       syncPortraitLock();
     }, 80);
@@ -4678,6 +4703,12 @@
     window.visualViewport.addEventListener('resize', onLayoutResize);
   }
   syncEmbedPhoneWideIframe();
+  syncEmbedScaleFactor();
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(function() {
+      syncEmbedScaleFactor();
+    });
+  }
   syncAssemblyPlacement();
   syncPortraitLock();
 
