@@ -40,9 +40,9 @@
     :root {
       /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
       --match-shell-max-width: 980px;
-      /* Wix matchEmbedWrap fixed phone frame (logical width 320px, portrait 9:16) */
-      --fvth-wix-mobile-w: 320px;
-      --fvth-wix-mobile-min-h: calc(320px * 16 / 9);
+      /* Wix fixed phone: layout target for zoom/caps (280 ≈ 肉眼看 320 列宽；宽 iframe 下 vw/pad 会显胖) */
+      --fvth-wix-mobile-w: 280px;
+      --fvth-wix-mobile-min-h: calc(280px * 16 / 9);
       /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
       --match-content-pad-x: 1.5rem;
       --match-content-pad-y: 1.25rem;
@@ -221,6 +221,17 @@
     }
     html.match-fvth-wix-mobile-frame .match-app-shell {
       min-height: var(--fvth-wix-mobile-min-h);
+      padding-left: 0;
+      padding-right: 0;
+    }
+    /* 窄 iframe、未走 html zoom 时：壳宽对齐 --fvth-wix-mobile-w，避免被父级拉到 350–400px */
+    html.match-fvth-wix-mobile-frame:not(.match-embed-phone-wide-iframe) .match-app-shell {
+      max-width: var(--fvth-wix-mobile-w);
+      margin-left: auto;
+      margin-right: auto;
+    }
+    html.match-fvth-wix-mobile-frame {
+      --match-content-pad-x: 1rem;
     }
 
     /* --- Header --- */
@@ -1998,7 +2009,7 @@
   /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
   var MATCH_EMBED_SHELL_PX = 980;
   /** Wix matchEmbedWrap fixed phone column width (sync with --fvth-wix-mobile-w). */
-  var FVTH_WIX_MOBILE_WIDTH_PX = 320;
+  var FVTH_WIX_MOBILE_WIDTH_PX = 280;
   /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. Ignored in .match-fvth-wix-mobile-frame. */
   var embedParentViewportWidthPx = null;
 
