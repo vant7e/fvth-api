@@ -163,6 +163,14 @@
       max-width: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
       max-height: min(100%, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)));
     }
+    /* Wix iframe: (max-width:900px) may not fire — force stacked layout like narrow breakpoint */
+    html.match-embed-phone-wide-iframe .page-wrap {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "header"
+        "main"
+        "sidebar";
+    }
 
     .page-wrap {
       min-height: 100vh;
