@@ -1819,6 +1819,42 @@
 
   /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
   var MATCH_EMBED_SHELL_PX = 980;
+  /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. */
+  var embedParentViewportWidthPx = null;
+
+  function embedParentOriginAllowed(origin) {
+    try {
+      var list = window.FVTH_EMBED_ALLOW_ORIGINS;
+      if (list && list.length) {
+        return list.indexOf(origin) !== -1;
+      }
+    } catch (e0) { /* ignore */ }
+    return true;
+  }
+
+  function parseEmbedPostMessageData(raw) {
+    var data = raw;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e1) {
+        return null;
+      }
+    }
+    if (!data || data.type !== 'FVTH_EMBED_VIEWPORT') return null;
+    var w = Number(data.width);
+    if (!isFinite(w) || w <= 0) return null;
+    return Math.min(Math.max(w, 80), 2000);
+  }
+
+  function onEmbedParentMessage(event) {
+    if (!embedParentOriginAllowed(event.origin)) return;
+    var w = parseEmbedPostMessageData(event.data);
+    if (w == null) return;
+    embedParentViewportWidthPx = w;
+    syncEmbedPhoneWideIframe();
+    syncEmbedScaleFactor();
+  }
 
   function syncEmbedScaleFactor() {
     var el = document.documentElement;
@@ -1827,12 +1863,17 @@
         el.style.removeProperty('--match-embed-scale');
         return;
       }
-      var cw = el.clientWidth || window.innerWidth || MATCH_EMBED_SHELL_PX;
-      if (window.visualViewport && window.visualViewport.width > 0) {
-        cw = Math.min(cw, window.visualViewport.width);
-      }
-      if (typeof screen !== 'undefined' && screen.width > 0 && screen.width < 900) {
-        cw = Math.min(cw, screen.width);
+      var cw;
+      if (embedParentViewportWidthPx != null && embedParentViewportWidthPx > 0) {
+        cw = embedParentViewportWidthPx;
+      } else {
+        cw = el.clientWidth || window.innerWidth || MATCH_EMBED_SHELL_PX;
+        if (window.visualViewport && window.visualViewport.width > 0) {
+          cw = Math.min(cw, window.visualViewport.width);
+        }
+        if (typeof screen !== 'undefined' && screen.width > 0 && screen.width < 900) {
+          cw = Math.min(cw, screen.width);
+        }
       }
       var s = cw / MATCH_EMBED_SHELL_PX;
       if (s > 1) s = 1;
@@ -4699,6 +4740,7 @@
   }
   window.addEventListener('resize', onLayoutResize);
   window.addEventListener('orientationchange', onLayoutResize);
+  window.addEventListener('message', onEmbedParentMessage);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', onLayoutResize);
   }
