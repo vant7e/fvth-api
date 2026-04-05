@@ -40,7 +40,7 @@
     :root {
       /* Embed / Wix: align with site header; override in parent: html { --match-shell-max-width: 960px; } */
       --match-shell-max-width: 980px;
-      /* Desktop only above. Wix 手机嵌入版心在 html.match-fvth-wix-mobile-frame 内单独设为 680px，勿改此处影响电脑端 */
+      /* Desktop only. Wix 手机嵌入版心在 .match-fvth-wix-mobile-frame 内单独设 --fvth-wix-shell-px */
       /* Desktop: text inset from gray panel edges (header, input, unit map, aside) */
       --match-content-pad-x: 1.5rem;
       --match-content-pad-y: 1.25rem;
@@ -218,22 +218,29 @@
       grid-template-areas: "header" "main" "sidebar";
     }
     /*
-     * Wix 手机嵌入（?fvth_wix_mobile=…）：版心 680px，与电脑 980px 完全分离；仅带 .match-fvth-wix-mobile-frame 时生效
+     * Wix 手机嵌入：版心 --fvth-wix-shell-px（与电脑 980px 分离）
      */
     html.match-fvth-wix-mobile-frame {
-      --fvth-wix-shell-px: 680px;
+      --fvth-wix-shell-px: 620px;
       --match-shell-max-width: var(--fvth-wix-shell-px);
-      --fvth-wix-mobile-min-h: calc(680px * 16 / 9);
+      --fvth-wix-mobile-min-h: calc(var(--fvth-wix-shell-px) * 16 / 9);
       --match-bead-plate-max: min(420px, var(--fvth-wix-shell-px));
       --match-bead-plate-display: min(calc(var(--match-bead-plate-max) * 0.98), 100%);
-      --match-content-pad-x: 1rem;
-      /* 版心变窄后根字号仍 16px 会显得字偏大；按 680/980 比例缩小，下限 13px 保证可读 */
-      font-size: clamp(13px, calc(16px * var(--fvth-wix-shell-px) / 980px), 15px);
+      --match-content-pad-x: 0.8rem;
+      --match-content-pad-y: 1rem;
+      font-size: clamp(12px, calc(14px * var(--fvth-wix-shell-px) / 980px), 14px);
     }
     html.match-fvth-wix-mobile-frame .match-app-shell {
       min-height: var(--fvth-wix-mobile-min-h);
       padding-left: 0;
       padding-right: 0;
+    }
+    html.match-fvth-wix-mobile-frame main {
+      padding: 1.1rem 0;
+      gap: 1rem;
+    }
+    html.match-fvth-wix-mobile-frame .header-top {
+      gap: 0.65rem 1rem;
     }
     html.match-fvth-wix-mobile-frame .bracelet-preview .bracelet-ring {
       max-width: min(220px, var(--fvth-wix-shell-px));
@@ -2022,7 +2029,7 @@
   /** Must match --match-shell-max-width (px). 100vw inside iframe is often wrong — use measured width. */
   var MATCH_EMBED_SHELL_PX = 980;
   /** Wix 手机嵌入版心宽度（与 html.match-fvth-wix-mobile-frame 内 --fvth-wix-shell-px 一致；电脑端仍用 MATCH_EMBED_SHELL_PX 980） */
-  var FVTH_WIX_MOBILE_WIDTH_PX = 680;
+  var FVTH_WIX_MOBILE_WIDTH_PX = 620;
   /** Set by parent postMessage (Wix column width). When set, overrides clientWidth heuristics. Ignored in .match-fvth-wix-mobile-frame. */
   var embedParentViewportWidthPx = null;
 
