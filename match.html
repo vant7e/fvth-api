@@ -1168,6 +1168,30 @@
     .bracelet-preview .config-code strong { color: var(--text-secondary); font-size: 0.95em; }
     .result-section.stage-preview .bead-field-wrap { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
     .result-section.stage-preview #beadContainer .empty-state { opacity: 0; pointer-events: none; }
+    /* Preview stage: unit map default z-index (3) sits above .bracelet-preview (2); hidden field can steal taps.
+       Radar SVG scale widens hit targets over preview. */
+    .result-section.stage-preview > #beadContainer {
+      pointer-events: none;
+      z-index: 0;
+    }
+    .result-section.stage-preview > #braceletPreview {
+      position: relative;
+      z-index: 6;
+    }
+    .result-section.stage-preview > #radarModule.energy-panel {
+      z-index: 2;
+    }
+    .result-section.stage-preview .radar-svg-wrap {
+      overflow: hidden;
+    }
+    .result-section.stage-preview #braceletPreview.visible .bracelet-ring {
+      overflow: hidden;
+    }
+    .result-section.stage-preview #braceletPreview.visible .preview-actions,
+    .result-section.stage-preview #braceletPreview.visible .config-code {
+      position: relative;
+      z-index: 2;
+    }
 
     /* In-page DEPLOY STRUCTURE export (no pop-out window) */
     .deploy-export-overlay {
@@ -1477,12 +1501,6 @@
           min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%) + 6.25rem
         );
       }
-      .result-section.stage-preview > #braceletPreview {
-        z-index: 6;
-      }
-      .result-section.stage-preview > #radarModule.energy-panel {
-        z-index: 2;
-      }
       .bracelet-preview.visible .preview-actions {
         flex-direction: column;
         align-items: stretch;
@@ -1606,12 +1624,6 @@
       min-height: calc(
         min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%) + 6.25rem
       );
-    }
-    html.match-fvth-wix-mobile-frame .result-section.stage-preview > #braceletPreview {
-      z-index: 6;
-    }
-    html.match-fvth-wix-mobile-frame .result-section.stage-preview > #radarModule.energy-panel {
-      z-index: 2;
     }
     html.match-fvth-wix-mobile-frame .bracelet-preview.visible .preview-actions {
       flex-direction: column;
@@ -2223,6 +2235,17 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
       }
     }
     if (!data || typeof data !== 'object') return;
+    if (data.type === 'FVTH_CONFIG_ID' || data.type === 'FVTH_LOAD_CONFIG') {
+      var rawCfg = data.configId != null ? data.configId : data.config;
+      var nid = normalizeFvthConfigId(rawCfg);
+      if (nid) {
+        window.__FVTH_PENDING_CONFIG_ID = nid;
+        if (fvthConfigBootFinished) {
+          void fetchAndHydrateSavedConfig(nid);
+        }
+      }
+      return;
+    }
     if (data.type === 'FVTH_EMBED_CONTAINER' && (data.id === 'matchEmbedWrap' || data.container === 'matchEmbedWrap')) {
       document.documentElement.classList.add('match-fvth-wix-mobile-frame');
       embedParentViewportWidthPx = null;
@@ -2654,16 +2677,84 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     window.location.href = getPostSaveMatchRedirectBase() + '?config=' + encodeURIComponent(configId);
   }
 
-  var _CONFIG_ID_RE_URL = /^FVTH-[0-9A-F]{5}$/;
+  var _CONFIG_ID_RE_URL = /^FVTH-[0-9A-F]{5}$/i;
 
+  function normalizeFvthConfigId(c) {
+    if (c == null || c === '') return '';
+    var raw = String(c).trim();
+    if (!_CONFIG_ID_RE_URL.test(raw)) return '';
+    return raw.toUpperCase();
+  }
+
+  /**
+   * Wix / HTML embed: parent page ?config= does NOT appear on iframe location.search.
+   * Use: Velo-built iframe URL or hash; window.FVTH_BOOTSTRAP_CONFIG_ID; postMessage FVTH_CONFIG_ID.
+   */
   function parseUrlConfigId() {
     try {
       var p = new URLSearchParams(window.location.search);
-      var c = p.get('config');
-      if (c && _CONFIG_ID_RE_URL.test(String(c).trim())) return String(c).trim();
+      var n = normalizeFvthConfigId(p.get('config'));
+      if (n) return n;
     } catch (e0) {}
     return null;
   }
+
+  function parseHashConfigId() {
+    try {
+      var h = window.location.hash || '';
+      if (!h || h === '#') return null;
+      var q = h.indexOf('config=');
+      if (q !== -1) {
+        var rest = h.slice(q + 'config='.length);
+        var amp = rest.indexOf('&');
+        if (amp !== -1) rest = rest.slice(0, amp);
+        var n = normalizeFvthConfigId(decodeURIComponent(rest.replace(/\+/g, ' ')));
+        if (n) return n;
+      }
+      var bare = h.replace(/^#/, '').trim();
+      var n2 = normalizeFvthConfigId(bare);
+      if (n2) return n2;
+    } catch (e1) {}
+    return null;
+  }
+
+  function getBootstrapWindowConfigId() {
+    try {
+      if (typeof window.FVTH_BOOTSTRAP_CONFIG_ID !== 'undefined' && window.FVTH_BOOTSTRAP_CONFIG_ID != null) {
+        var a = normalizeFvthConfigId(window.FVTH_BOOTSTRAP_CONFIG_ID);
+        if (a) return a;
+      }
+      if (typeof window.FVTH_URL_CONFIG_ID !== 'undefined' && window.FVTH_URL_CONFIG_ID != null) {
+        var b = normalizeFvthConfigId(window.FVTH_URL_CONFIG_ID);
+        if (b) return b;
+      }
+    } catch (e2) {}
+    return null;
+  }
+
+  function consumePendingEmbedConfigId() {
+    try {
+      var p = window.__FVTH_PENDING_CONFIG_ID;
+      if (p == null || p === '') return null;
+      delete window.__FVTH_PENDING_CONFIG_ID;
+      return normalizeFvthConfigId(p);
+    } catch (e3) {
+      return null;
+    }
+  }
+
+  function resolveInitialConfigId() {
+    var p = consumePendingEmbedConfigId();
+    if (p) return p;
+    var b = getBootstrapWindowConfigId();
+    if (b) return b;
+    var u = parseUrlConfigId();
+    if (u) return u;
+    return parseHashConfigId();
+  }
+
+  var fvthLastHydratedConfigId = null;
+  var fvthConfigBootFinished = false;
 
   function stripConfigQueryParam() {
     try {
@@ -2744,9 +2835,7 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     var dateInput = document.getElementById('birthDate');
     if (dateInput) dateInput.value = dateStr;
     state.dateStr = dateStr;
-    state.persistConfigId = (data.config_id && _CONFIG_ID_RE_URL.test(String(data.config_id).trim()))
-      ? String(data.config_id).trim()
-      : parseUrlConfigId();
+    state.persistConfigId = normalizeFvthConfigId(data.config_id) || parseUrlConfigId() || parseHashConfigId();
     state.deployShareCode = inner.share_code || null;
 
     var empty = document.getElementById('emptyState');
@@ -2855,9 +2944,9 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     });
   }
 
-  async function tryLoadSavedConfigOnBoot() {
-    var cid = parseUrlConfigId();
+  async function fetchAndHydrateSavedConfig(cid) {
     if (!cid) return false;
+    if (fvthLastHydratedConfigId === cid) return true;
 
     var apiBase = getFvthConfigApiBase();
     if (!apiBase) {
@@ -2891,10 +2980,30 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
 
     try {
       await hydrateFromSavedConfig(data);
+      fvthLastHydratedConfigId = cid;
     } catch (e3) {
       return true;
     }
     return true;
+  }
+
+  async function tryLoadSavedConfigOnBoot() {
+    var attempted = false;
+    try {
+      var cid = resolveInitialConfigId();
+      if (cid) {
+        attempted = true;
+        await fetchAndHydrateSavedConfig(cid);
+      }
+    } finally {
+      fvthConfigBootFinished = true;
+      var after = consumePendingEmbedConfigId();
+      if (after && after !== fvthLastHydratedConfigId) {
+        attempted = true;
+        await fetchAndHydrateSavedConfig(after);
+      }
+    }
+    return attempted;
   }
 
   /** Collect candidate image paths/URLs (multi-image: API `images` or | in `image`). */
@@ -4371,30 +4480,22 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
         alert('Wait for the video to finish loading.');
         return;
       }
-      var f = new File([L], deployExportState.fileName, { type: L.type || deployExportState.mime });
-      var canFiles =
-        navigator.share &&
-        navigator.canShare &&
-        (function() {
-          try {
-            return navigator.canShare({ files: [f] });
-          } catch (e) {
-            return false;
-          }
-        })();
-      if (canFiles) {
+      var mime = L.type || deployExportState.mime || 'video/mp4';
+      var f = new File([L], deployExportState.fileName || 'fvth-structure.mp4', { type: mime });
+      /* Do not gate on canShare({ files }): iOS / in-app browsers often report false while share(files) still works. */
+      if (navigator.share) {
         navigator
           .share({
             files: [f],
             title: 'FVTH structure',
             text: 'In the share sheet, tap Save Video or Save to Photos · FVTH configuration'
           })
-          .catch(function(err) {
+          .catch(function() {
             deployExportDownloadFallback();
           });
-      } else {
-        deployExportDownloadFallback();
+        return;
       }
+      deployExportDownloadFallback();
     };
   }
 
