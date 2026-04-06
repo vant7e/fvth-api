@@ -1688,6 +1688,22 @@
     html.match-fvth-wix-mobile-frame .bead.size-l { width: 40px; height: 40px; font-size: 0.55rem; }
     html.match-fvth-wix-mobile-frame .bead.size-l .bead-face { width: 40px; height: 40px; }
 
+    /* Wix mobile: pin deploy export card to top of viewport (not vertical center of tall iframe). */
+    html.match-fvth-wix-mobile-frame .deploy-export-overlay.open {
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+      padding-left: 12px;
+      padding-right: 12px;
+      padding-bottom: 12px;
+      box-sizing: border-box;
+    }
+    html.match-fvth-wix-mobile-frame .deploy-export-panel {
+      margin-top: 0;
+      flex-shrink: 0;
+      max-height: calc(100dvh - max(0.75rem, env(safe-area-inset-top, 0px)) - 1.5rem);
+    }
+
     /* Desktop (real wide screen): extra air above radar; pin energy panel — not when Wix forces mobile (?fvth_wix_mobile=1) */
     @media (min-width: 901px) and (min-device-width: 901px) {
       /* Prevent layout jump: reserve bead plate height before WebGL/canvas mounts. */
@@ -1701,6 +1717,13 @@
       /* Preview stage: keep radar in normal flow with a stable top margin (avoid "auto" reflow surprises). */
       html:not(.match-fvth-wix-mobile-frame) .result-section.stage-preview > #radarModule.energy-panel {
         margin-top: 1.25rem;
+      }
+      /* Preview stage: never let radar paint above preview buttons/code during transient reflow. */
+      html:not(.match-fvth-wix-mobile-frame) .result-section.stage-preview > #braceletPreview {
+        z-index: 6;
+      }
+      html:not(.match-fvth-wix-mobile-frame) .result-section.stage-preview > #radarModule.energy-panel {
+        z-index: 2;
       }
       html:not(.match-fvth-wix-mobile-frame) .result-section > #beadContainer {
         padding-bottom: 2rem;
@@ -4145,6 +4168,20 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
       .replace(/"/g, '&quot;');
   }
 
+  function scrollPageContainersToTop() {
+    try {
+      window.scrollTo(0, 0);
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+      var shell = document.querySelector('.match-app-shell');
+      if (shell) shell.scrollTop = 0;
+      var mainEl = document.querySelector('main');
+      if (mainEl) mainEl.scrollTop = 0;
+      var rs = document.getElementById('resultSection');
+      if (rs) rs.scrollTop = 0;
+    } catch (e) { /* ignore */ }
+  }
+
   function openDeployExportOverlayLoading() {
     var ov = document.getElementById('deployExportOverlay');
     if (!ov) return;
@@ -4157,7 +4194,15 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     ov.setAttribute('aria-hidden', 'false');
     try {
       ov.scrollTop = 0;
-      window.scrollTo(0, 0);
+      scrollPageContainersToTop();
+      try {
+        if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) {
+          requestAnimationFrame(function() {
+            scrollPageContainersToTop();
+            ov.scrollTop = 0;
+          });
+        }
+      } catch (e3) { /* ignore */ }
     } catch (e2) {}
   }
 
@@ -4205,6 +4250,10 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
       '</h2><p class="deploy-export-err-msg">' +
       deployExportEscapeHtml(plain) +
       '</p>';
+    try {
+      ov.scrollTop = 0;
+      scrollPageContainersToTop();
+    } catch (e) {}
   }
 
   /** Programmatic anchor download is unreliable on iOS Safari; a visible link works better. */
@@ -4260,6 +4309,17 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     document.getElementById('deployExportError').style.display = 'none';
     document.getElementById('deployExportError').innerHTML = '';
     document.getElementById('deployExportContent').style.display = 'block';
+    try {
+      var ovR = document.getElementById('deployExportOverlay');
+      if (ovR) ovR.scrollTop = 0;
+      scrollPageContainersToTop();
+      if (document.documentElement.classList.contains('match-fvth-wix-mobile-frame')) {
+        requestAnimationFrame(function() {
+          if (ovR) ovR.scrollTop = 0;
+          scrollPageContainersToTop();
+        });
+      }
+    } catch (e) {}
 
     var codeEl = document.getElementById('deployExportCode');
     if (codeEl) codeEl.textContent = shareCode || '—';
