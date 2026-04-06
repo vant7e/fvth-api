@@ -2331,7 +2331,7 @@
     return u.toString();
   }
 
-  /** After POST /config succeeds: open MATCH with ?config=. Override with window.FVTH_MATCH_URL (e.g. Wix /match). */
+  /** After POST /config succeeds: open MATCH-02 with ?config=. Override with window.FVTH_MATCH_URL. */
   var FVTH_RAILWAY_API_DEFAULT = 'https://fvth-api-production.up.railway.app';
 
   function getPostSaveMatchRedirectBase() {
@@ -2340,7 +2340,7 @@
         return String(window.FVTH_MATCH_URL).trim().replace(/\/$/, '');
       }
     } catch (e) {}
-    return 'https://www.fvthdesign.com/match';
+    return 'https://www.fvthdesign.com/match-02';
   }
 
   /** Persist/load configs: window.FVTH_CONFIG_API_BASE, else Railway production (Wix embed). */
@@ -2444,7 +2444,7 @@
     };
   }
 
-  /** POST /config: { config_id, data: { birth, beads, image_base64?, video_base64? } } */
+  /** POST /config: { config_id, data: { …, video_base64?, beads_video_base64? } } */
   function buildConfigPostEnvelope(configId, extraFlat) {
     var flat = buildStructureSaveBody(configId);
     extraFlat = extraFlat || {};
@@ -2502,6 +2502,18 @@
         }
       } catch (e) {
         console.warn('Preview video not attached:', e);
+      }
+    }
+    var B = deployExportState.beadsBlob;
+    if (B && B.size) {
+      try {
+        var bdata = await blobToDataURL(B);
+        if (bdata) {
+          extra.beads_video_base64 = bdata;
+          extra.beads_video_mime = B.type || deployExportState.beadsMime || extra.video_mime || 'video/webm';
+        }
+      } catch (e2) {
+        console.warn('Beads preview video not attached:', e2);
       }
     }
     var body = buildConfigPostEnvelope(configId, extra);
@@ -3743,6 +3755,45 @@
     return '';
   }
 
+  function recordDeployExportClip(inst, glCanvas, drawFrameFn, mime, W, H, fps, totalFrames, videoBitsPerSecond) {
+    return new Promise(function(resolve, reject) {
+      var canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      var ctx = canvas.getContext('2d');
+      var stream = canvas.captureStream(fps);
+      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: videoBitsPerSecond });
+      var chunks = [];
+      rec.ondataavailable = function(e) {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+      rec.onstop = function() {
+        try {
+          resolve(new Blob(chunks, { type: mime }));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      rec.onerror = function(ev) {
+        reject(ev.error || new Error('MediaRecorder error'));
+      };
+      rec.start(200);
+      var frame = 0;
+      function tickFrame() {
+        if (frame >= totalFrames) {
+          rec.stop();
+          return;
+        }
+        var tSec = frame / fps;
+        inst.renderFrameAt(tSec);
+        drawFrameFn(ctx, W, H, glCanvas);
+        frame++;
+        setTimeout(tickFrame, 1000 / fps);
+      }
+      tickFrame();
+    });
+  }
+
   function canvasRoundRectPath(ctx, x, y, w, h, r) {
     var rr = Math.min(r, w / 2, h / 2);
     ctx.beginPath();
@@ -3914,7 +3965,7 @@
     ctx.restore();
   }
 
-  /** Deploy preview: black background + centered bracelet WebGL only (no header, text, radar, panels). */
+  /** MATCH-02 preview: black + centered 3D with rounded clip (same language as poster 3D inset). */
   function drawDeployBeadsOnlyFrame(ctx, W, H, glCanvas) {
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
@@ -3923,7 +3974,16 @@
     var side = Math.min(W - 2 * margin, H - 2 * margin);
     var x0 = (W - side) / 2;
     var y0 = (H - side) / 2;
+    var r = Math.max(12, Math.round(side * 0.015));
+    ctx.save();
+    canvasRoundRectPath(ctx, x0, y0, side, side, r);
+    ctx.clip();
     ctx.drawImage(glCanvas, x0, y0, side, side);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+    ctx.lineWidth = Math.max(1.25, side / 400);
+    canvasRoundRectPath(ctx, x0, y0, side, side, r);
+    ctx.stroke();
   }
 
   /** 9:16 deploy frame: full-black canvas; inset rounded frame (stroke only) = layout zone; upper = config + 3D, lower = energy profile. */
@@ -4005,7 +4065,14 @@
     );
   }
 
-  var deployExportState = { blob: null, objectUrl: null, fileName: '', mime: '' };
+  var deployExportState = {
+    blob: null,
+    objectUrl: null,
+    fileName: '',
+    mime: '',
+    beadsBlob: null,
+    beadsMime: ''
+  };
 
   function deployExportEscapeHtml(s) {
     return String(s || '')
@@ -4048,6 +4115,8 @@
     deployExportState.objectUrl = null;
     deployExportState.fileName = '';
     deployExportState.mime = '';
+    deployExportState.beadsBlob = null;
+    deployExportState.beadsMime = '';
   }
 
   function showDeployExportOverlayError(heading, plain) {
@@ -4096,13 +4165,15 @@
     }
   }
 
-  function showDeployExportResult(blob, shareCode, mime) {
+  function showDeployExportResult(blob, shareCode, mime, beadsBlob) {
     var m = mime || 'video/webm';
     var ext = m.indexOf('mp4') !== -1 ? '.mp4' : '.webm';
     var baseName = String(shareCode || 'FVTH').replace(/[^\w-]+/g, '') + '-structure' + ext;
     deployExportState.blob = blob;
     deployExportState.mime = m;
     deployExportState.fileName = baseName;
+    deployExportState.beadsBlob = beadsBlob && beadsBlob.size ? beadsBlob : null;
+    deployExportState.beadsMime = m;
     if (deployExportState.objectUrl) {
       try {
         URL.revokeObjectURL(deployExportState.objectUrl);
@@ -4225,48 +4296,43 @@
         pixelRatio: 1
       });
 
-      var canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
-      var ctx = canvas.getContext('2d');
       var glCanvas = inst.renderer.domElement;
       var posterInset = Math.max(32, Math.round(Math.min(W, H) * 0.045));
 
-      var stream = canvas.captureStream(fps);
-      var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: videoBitsPerSecond });
-      var chunks = [];
-      rec.ondataavailable = function(e) {
-        if (e.data && e.data.size) chunks.push(e.data);
-      };
+      var blob = await recordDeployExportClip(
+        inst,
+        glCanvas,
+        function(c, w, h, gl) {
+          drawDeployPosterFrame(c, w, h, posterInset, gl, shareCode);
+        },
+        mime,
+        W,
+        H,
+        fps,
+        totalFrames,
+        videoBitsPerSecond
+      );
 
-      var blob = await new Promise(function(resolve, reject) {
-        rec.onstop = function() {
-          try {
-            resolve(new Blob(chunks, { type: mime }));
-          } catch (err) {
-            reject(err);
-          }
-        };
-        rec.onerror = function(ev) {
-          reject(ev.error || new Error('MediaRecorder error'));
-        };
-        rec.start(200);
-        var frame = 0;
-        function tickFrame() {
-          if (frame >= totalFrames) {
-            rec.stop();
-            return;
-          }
-          var tSec = frame / fps;
-          inst.renderFrameAt(tSec);
-          drawDeployPosterFrame(ctx, W, H, posterInset, glCanvas, shareCode);
-          frame++;
-          setTimeout(tickFrame, 1000 / fps);
-        }
-        tickFrame();
-      });
+      var beadsBlob = null;
+      try {
+        beadsBlob = await recordDeployExportClip(
+          inst,
+          glCanvas,
+          function(c, w, h, gl) {
+            drawDeployBeadsOnlyFrame(c, w, h, gl);
+          },
+          mime,
+          W,
+          H,
+          fps,
+          totalFrames,
+          videoBitsPerSecond
+        );
+      } catch (beadsErr) {
+        console.warn('[FVTH] Beads-only preview clip failed:', beadsErr);
+      }
 
-      showDeployExportResult(blob, shareCode, mime);
+      showDeployExportResult(blob, shareCode, mime, beadsBlob);
     } catch (err) {
       console.error(err);
       var errMsg = err && err.message ? err.message : String(err);

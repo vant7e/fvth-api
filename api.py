@@ -56,6 +56,8 @@ class ConfigRequest(BaseModel):
     image_base64: Optional[str] = None
     video_base64: Optional[str] = None
     video_mime: Optional[str] = None
+    beads_video_base64: Optional[str] = None
+    beads_video_mime: Optional[str] = None
     video_url: Optional[str] = None
     image_url: Optional[str] = None
 
@@ -113,6 +115,23 @@ def _write_preview_video(cid: str, raw: bytes, mime: Optional[str]) -> None:
 def _find_preview_video(cid: str) -> tuple[Optional[Path], str]:
     for ext, media in ((".mp4", "video/mp4"), (".webm", "video/webm")):
         p = _SAVED_VIDEOS_DIR / f"{cid}{ext}"
+        if p.is_file():
+            return p, media
+    return None, ""
+
+
+def _write_beads_preview_video(cid: str, raw: bytes, mime: Optional[str]) -> None:
+    ext, _ = _video_ext_and_media_type(mime)
+    for other in (".mp4", ".webm"):
+        alt = _SAVED_VIDEOS_DIR / f"{cid}-beads{other}"
+        if alt.is_file():
+            alt.unlink()
+    (_SAVED_VIDEOS_DIR / f"{cid}-beads{ext}").write_bytes(raw)
+
+
+def _find_beads_preview_video(cid: str) -> tuple[Optional[Path], str]:
+    for ext, media in ((".mp4", "video/mp4"), (".webm", "video/webm")):
+        p = _SAVED_VIDEOS_DIR / f"{cid}-beads{ext}"
         if p.is_file():
             return p, media
     return None, ""
@@ -255,10 +274,16 @@ def _save_config_core(req: ConfigRequest) -> dict[str, Any]:
     payload.pop("image_base64", None)
     payload.pop("video_base64", None)
     payload.pop("video_mime", None)
+    payload.pop("beads_video_base64", None)
+    payload.pop("beads_video_mime", None)
 
     vid_bytes = _decode_base64_binary(req.video_base64)
     if vid_bytes:
         _write_preview_video(cid, vid_bytes, req.video_mime)
+
+    beads_vid = _decode_base64_binary(req.beads_video_base64)
+    if beads_vid:
+        _write_beads_preview_video(cid, beads_vid, req.beads_video_mime)
 
     img_bytes = _decode_base64_binary(req.image_base64)
     if img_bytes and not vid_bytes:
@@ -292,19 +317,29 @@ def config_api_help():
     """Browser GET on /config is not a load — use GET /config/{FVTH-xxxxx} after saving."""
     return {
         "service": "FVTH config API",
-        "save": "POST /config — JSON { config_id, data: { …, video_base64? } } (deploy preview video)",
-        "load": "GET /config/{config_id} — JSON + video_url / image_url when files exist",
+        "save": "POST /config — data may include video_base64 (full poster) + beads_video_base64 (3D loop for Wix)",
+        "load": "GET …/video (poster), GET …/beads-video (3D only), JSON includes *_url when present",
         "why_method_not_allowed": "Opening /config in the address bar sends GET; saving requires POST from your app.",
     }
 
 
 @app.get("/config/{config_id}/video")
 def get_config_video(config_id: str):
-    """Stream stored preview video (video/mp4 or video/webm); not JSON."""
+    """Stream stored full-card deploy video (video/mp4 or video/webm)."""
     cid = _validate_config_id(config_id)
     path, media = _find_preview_video(cid)
     if not path:
         raise HTTPException(status_code=404, detail="Video not found")
+    return FileResponse(path, media_type=media, filename=path.name)
+
+
+@app.get("/config/{config_id}/beads-video")
+def get_config_beads_video(config_id: str):
+    """Stream beads-only 3D loop for Wix MATCH-02 preview container."""
+    cid = _validate_config_id(config_id)
+    path, media = _find_beads_preview_video(cid)
+    if not path:
+        raise HTTPException(status_code=404, detail="Beads preview video not found")
     return FileResponse(path, media_type=media, filename=path.name)
 
 
@@ -345,6 +380,10 @@ def get_config(config_id: str, request: Request):
         data["preview_url"] = data["video_url"]
     elif data.get("video_url"):
         data["preview_url"] = data["video_url"]
+
+    bvpath, _ = _find_beads_preview_video(cid)
+    if bvpath:
+        data["beads_video_url"] = f"{base}/config/{cid}/beads-video"
 
     png_path = _SAVED_IMAGES_DIR / f"{cid}.png"
     if png_path.is_file():
