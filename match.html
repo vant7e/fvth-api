@@ -1694,6 +1694,14 @@
       html:not(.match-fvth-wix-mobile-frame) .result-section.mode-analysis:not(.stage-preview) > #beadContainer {
         min-height: calc(var(--match-bead-plate-display) + 2.75rem);
       }
+      /* Preview stage: reserve ring+buttons height so radar never jumps upward while WebGL mounts. */
+      html:not(.match-fvth-wix-mobile-frame) .result-section.stage-preview > #braceletPreview.visible {
+        min-height: calc(var(--match-bead-plate-display) + 7.5rem);
+      }
+      /* Preview stage: keep radar in normal flow with a stable top margin (avoid "auto" reflow surprises). */
+      html:not(.match-fvth-wix-mobile-frame) .result-section.stage-preview > #radarModule.energy-panel {
+        margin-top: 1.25rem;
+      }
       html:not(.match-fvth-wix-mobile-frame) .result-section > #beadContainer {
         padding-bottom: 2rem;
       }
