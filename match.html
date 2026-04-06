@@ -4188,7 +4188,7 @@
 
     var shareCode = state.deployShareCode || generateShareCode();
     var narrow = matchIsMobileLayout();
-    /* 9:16 output; ~1s phone / ~2s desktop loop; beads-only composite (see drawDeployBeadsOnlyFrame). */
+    /* 9:16 output; ~1s phone / ~2s desktop loop; full poster = 3D + ENERGY PROFILE (五行雷达 + balance). */
     var W = narrow ? 720 : 1080;
     var H = narrow ? 1280 : 1920;
     var totalFrames = narrow ? 24 : 36;
@@ -4230,6 +4230,7 @@
       canvas.height = H;
       var ctx = canvas.getContext('2d');
       var glCanvas = inst.renderer.domElement;
+      var posterInset = Math.max(32, Math.round(Math.min(W, H) * 0.045));
 
       var stream = canvas.captureStream(fps);
       var rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: videoBitsPerSecond });
@@ -4258,7 +4259,7 @@
           }
           var tSec = frame / fps;
           inst.renderFrameAt(tSec);
-          drawDeployBeadsOnlyFrame(ctx, W, H, glCanvas);
+          drawDeployPosterFrame(ctx, W, H, posterInset, glCanvas, shareCode);
           frame++;
           setTimeout(tickFrame, 1000 / fps);
         }
