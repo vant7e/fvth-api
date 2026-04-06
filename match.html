@@ -1467,6 +1467,21 @@
         height: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
         max-width: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
         max-height: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+        /* Empty ring before WebGL mounts: keep box so assembly/radar don’t slide up. */
+        min-width: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+        min-height: min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      }
+      /* Same idea as desktop min-height on #braceletPreview — mobile narrow viewport. */
+      .result-section.stage-preview > #braceletPreview.visible {
+        min-height: calc(
+          min(86vw, calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%) + 6.25rem
+        );
+      }
+      .result-section.stage-preview > #braceletPreview {
+        z-index: 6;
+      }
+      .result-section.stage-preview > #radarModule.energy-panel {
+        z-index: 2;
       }
       .bracelet-preview.visible .preview-actions {
         flex-direction: column;
@@ -1584,6 +1599,19 @@
       height: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
       max-width: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
       max-height: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      min-width: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+      min-height: min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%);
+    }
+    html.match-fvth-wix-mobile-frame .result-section.stage-preview > #braceletPreview.visible {
+      min-height: calc(
+        min(var(--fvth-wix-shell-px), calc(var(--match-bead-plate-max) * 0.98 * var(--match-preview-ring-mobile-factor)), 100%) + 6.25rem
+      );
+    }
+    html.match-fvth-wix-mobile-frame .result-section.stage-preview > #braceletPreview {
+      z-index: 6;
+    }
+    html.match-fvth-wix-mobile-frame .result-section.stage-preview > #radarModule.energy-panel {
+      z-index: 2;
     }
     html.match-fvth-wix-mobile-frame .bracelet-preview.visible .preview-actions {
       flex-direction: column;
