@@ -1,6 +1,6 @@
 # Ensure Git LFS pulls GLBs after clone (GitHub stores pointers in git; real files are on LFS).
 [phases.setup]
-aptPkgs = ["git-lfs"]
+aptPkgs = ["git-lfs", "ffmpeg"]
 
 [phases.install]
 cmds = [

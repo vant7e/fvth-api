@@ -1,6 +1,8 @@
 import base64
 import json
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
@@ -103,13 +105,53 @@ def _video_ext_and_media_type(mime: Optional[str]) -> tuple[str, str]:
     return ".webm", "video/webm"
 
 
+def _try_transcode_webm_to_mp4(src_webm: Path, dst_mp4: Path) -> bool:
+    """Best-effort: create an iOS-friendly MP4 from WebM.
+
+    Chrome's MediaRecorder typically outputs WebM, which iOS Safari can't play. We generate MP4 so
+    /video and /beads-video can prefer mp4 for mobile.
+    """
+    try:
+        if not src_webm.is_file():
+            return False
+        dst_mp4.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(prefix=dst_mp4.name + ".", suffix=".tmp", dir=str(dst_mp4.parent)) as tf:
+            tmp = Path(tf.name)
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(src_webm),
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-profile:v",
+                "baseline",
+                "-level",
+                "3.0",
+                "-movflags",
+                "+faststart",
+                "-an",
+                str(tmp),
+            ]
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=25)
+            tmp.replace(dst_mp4)
+        return dst_mp4.is_file() and dst_mp4.stat().st_size > 0
+    except Exception:
+        return False
+
+
 def _write_preview_video(cid: str, raw: bytes, mime: Optional[str]) -> None:
     ext, _ = _video_ext_and_media_type(mime)
     for other in (".mp4", ".webm"):
         alt = _SAVED_VIDEOS_DIR / f"{cid}{other}"
         if alt.is_file():
             alt.unlink()
-    (_SAVED_VIDEOS_DIR / f"{cid}{ext}").write_bytes(raw)
+    out = _SAVED_VIDEOS_DIR / f"{cid}{ext}"
+    out.write_bytes(raw)
+    if ext == ".webm":
+        _try_transcode_webm_to_mp4(out, _SAVED_VIDEOS_DIR / f"{cid}.mp4")
 
 
 def _find_preview_video(cid: str) -> tuple[Optional[Path], str]:
@@ -126,7 +168,10 @@ def _write_beads_preview_video(cid: str, raw: bytes, mime: Optional[str]) -> Non
         alt = _SAVED_VIDEOS_DIR / f"{cid}-beads{other}"
         if alt.is_file():
             alt.unlink()
-    (_SAVED_VIDEOS_DIR / f"{cid}-beads{ext}").write_bytes(raw)
+    out = _SAVED_VIDEOS_DIR / f"{cid}-beads{ext}"
+    out.write_bytes(raw)
+    if ext == ".webm":
+        _try_transcode_webm_to_mp4(out, _SAVED_VIDEOS_DIR / f"{cid}-beads.mp4")
 
 
 def _find_beads_preview_video(cid: str) -> tuple[Optional[Path], str]:

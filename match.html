@@ -1177,6 +1177,10 @@
       display: none;
       align-items: center;
       justify-content: center;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       padding: 12px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -4143,6 +4147,10 @@ SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong
     errEl.innerHTML = '';
     ov.classList.add('open');
     ov.setAttribute('aria-hidden', 'false');
+    try {
+      ov.scrollTop = 0;
+      window.scrollTo(0, 0);
+    } catch (e2) {}
   }
 
   function closeDeployExportOverlay() {
