@@ -1541,6 +1541,12 @@
     html.match-fvth-wix-mobile-frame .result-section .section-title {
       flex-shrink: 0;
     }
+    /* Mobile flow order: unit map → preview ring/buttons → assembly → radar → (sidebar below). */
+    html.match-fvth-wix-mobile-frame .result-section .section-title { order: 1; }
+    html.match-fvth-wix-mobile-frame .result-section > #beadContainer { order: 2; }
+    html.match-fvth-wix-mobile-frame .result-section > #braceletPreview { order: 3; }
+    html.match-fvth-wix-mobile-frame .result-section > #assemblyMountMain { order: 4; }
+    html.match-fvth-wix-mobile-frame .result-section > #radarModule { order: 5; }
     html.match-fvth-wix-mobile-frame .result-section > #beadContainer {
       flex-shrink: 0;
       width: 100%;
@@ -1618,11 +1624,19 @@
       margin-right: auto;
       display: block;
     }
+    /* Mobile assembly stage: keep title + count visible; list scrolls; msg stays hidden. */
     html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-title,
-    html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-count,
-    html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-list,
+    html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-count {
+      display: block !important;
+    }
     html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-msg {
       display: none !important;
+    }
+    html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block .assembly-list {
+      display: block !important;
+      max-height: 180px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     html.match-fvth-wix-mobile-frame .result-section.mode-assembly .assembly-mount-main .assembly-block {
       margin-top: 0.35rem;
@@ -1639,8 +1653,21 @@
       margin-top: 0;
     }
 
+    /* Mobile unit map beads: slightly smaller so the field reads cleaner. */
+    html.match-fvth-wix-mobile-frame .bead { width: 32px; height: 32px; font-size: 0.5rem; }
+    html.match-fvth-wix-mobile-frame .bead-face { width: 32px; height: 32px; }
+    html.match-fvth-wix-mobile-frame .bead-face .bead-code { font-size: 0.42rem; }
+    html.match-fvth-wix-mobile-frame .bead.size-m { width: 36px; height: 36px; font-size: 0.52rem; }
+    html.match-fvth-wix-mobile-frame .bead.size-m .bead-face { width: 36px; height: 36px; }
+    html.match-fvth-wix-mobile-frame .bead.size-l { width: 40px; height: 40px; font-size: 0.55rem; }
+    html.match-fvth-wix-mobile-frame .bead.size-l .bead-face { width: 40px; height: 40px; }
+
     /* Desktop (real wide screen): extra air above radar; pin energy panel — not when Wix forces mobile (?fvth_wix_mobile=1) */
     @media (min-width: 901px) and (min-device-width: 901px) {
+      /* Prevent layout jump: reserve bead plate height before WebGL/canvas mounts. */
+      html:not(.match-fvth-wix-mobile-frame) .result-section.mode-analysis:not(.stage-preview) > #beadContainer {
+        min-height: calc(var(--match-bead-plate-display) + 2.75rem);
+      }
       html:not(.match-fvth-wix-mobile-frame) .result-section > #beadContainer {
         padding-bottom: 2rem;
       }
@@ -1943,7 +1970,10 @@
             <button type="button" class="btn-deploy-export" id="deployExportBtnSave">SAVE YOUR STRUCTURE</button>
             <button type="button" class="btn-deploy-export" id="deployExportBtnShare">SHARE YOUR STRUCTURE</button>
           </div>
-          <p class="deploy-export-hint">SAVE YOUR STRUCTURE uploads your config to FVTH and opens match-02. SHARE opens the system sheet — on iPhone tap <strong>Save Video</strong> or <strong>Save to Photos</strong> (English labels; MP4 when your browser supports it).</p>
+          <p class="deploy-export-hint">
+SAVE YOUR STRUCTURE uploads your configuration to FVTH and redirects to match-02. 
+SHARE opens the system share sheet. On iPhone, choose <strong>Save Video</strong> or <strong>Save to Photos</strong> (labels may vary; exported as MP4 when supported).
+</p>
           <p class="deploy-export-dl-note" id="deployExportDlNote">
             <a href="#" id="deployExportDlLink" class="deploy-export-dl-link" download="fvth-structure.webm">Download video file</a>
             <span id="deployExportDlHint"> — tap if share did not save (Safari may need a direct tap).</span>
