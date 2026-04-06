@@ -2444,7 +2444,7 @@
     };
   }
 
-  /** Body for POST /config: { config_id, data: { birth, beads, … } } — matches Railway + Wix examples. */
+  /** POST /config: { config_id, data: { birth, beads, image_base64?, video_base64? } } */
   function buildConfigPostEnvelope(configId, extraFlat) {
     var flat = buildStructureSaveBody(configId);
     extraFlat = extraFlat || {};
@@ -2459,7 +2459,7 @@
     };
   }
 
-  /** Fire-and-forget: persist config right after preview ID is assigned (before export video). */
+  /** Fire-and-forget: persist config right after preview ID (PNG from assembly ring). */
   function postConfigDraftSilently() {
     var apiBase = getFvthConfigApiBase();
     if (!apiBase || !state.persistConfigId) return;
@@ -2547,6 +2547,12 @@
     } catch (e) {}
   }
 
+  /** GET /config/:id may return { config_id, image_url, data } or legacy flat JSON. */
+  function getSavedConfigInner(raw) {
+    if (raw && raw.data && typeof raw.data === 'object') return raw.data;
+    return raw;
+  }
+
   function savedBirthToDateTimeInput(data) {
     if (!data) return '';
     var iso = (data.birth || '').trim();
@@ -2594,7 +2600,8 @@
   }
 
   async function hydrateFromSavedConfig(data) {
-    var dateStr = savedBirthToDateTimeInput(data);
+    var inner = getSavedConfigInner(data);
+    var dateStr = savedBirthToDateTimeInput(inner);
     if (!dateStr) {
       showConfigNotFoundUi('Saved config is missing birth data.');
       throw new Error('missing birth');
@@ -2613,7 +2620,7 @@
     state.persistConfigId = (data.config_id && _CONFIG_ID_RE_URL.test(String(data.config_id).trim()))
       ? String(data.config_id).trim()
       : parseUrlConfigId();
-    state.deployShareCode = data.share_code || null;
+    state.deployShareCode = inner.share_code || null;
 
     var empty = document.getElementById('emptyState');
     if (empty) empty.style.display = 'none';
@@ -2662,7 +2669,7 @@
     state.unitQuantities = {};
     state.mode = 'assembly';
     state.selected = [];
-    var savedBeads = data.beads || [];
+    var savedBeads = inner.beads || [];
     for (var si = 0; si < savedBeads.length; si++) {
       var sb = savedBeads[si];
       if (!sb || sb.id == null) continue;

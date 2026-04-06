@@ -56,13 +56,12 @@ class ConfigRequest(BaseModel):
     image_base64: Optional[str] = None
     video_base64: Optional[str] = None
     video_mime: Optional[str] = None
-    # Optional client URLs (used when no file is uploaded on server)
     video_url: Optional[str] = None
     image_url: Optional[str] = None
 
 
 def _merge_config_post_body(body: Any) -> dict[str, Any]:
-    """Merge { config_id, data: {...}, video_url?, ... } into a flat dict for ConfigRequest."""
+    """Merge { config_id, data: {...}, ... } into a flat dict for ConfigRequest."""
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="JSON object required")
     inner = body.get("data")
@@ -282,7 +281,7 @@ def save_config(req: ConfigRequest):
 
 @app.post("/config")
 def save_config_post_alias(body: dict[str, Any] = Body(...)):
-    """Same persistence as POST /api/config; accepts { config_id, data: { ... }, video_url?, image_url? }."""
+    """POST { config_id, data: { beads, birth, image_base64?, video_base64?, … } }."""
     merged = _merge_config_post_body(body)
     req = ConfigRequest(**merged)
     return _save_config_core(req)
@@ -293,8 +292,8 @@ def config_api_help():
     """Browser GET on /config is not a load — use GET /config/{FVTH-xxxxx} after saving."""
     return {
         "service": "FVTH config API",
-        "save": "POST /config — JSON body with config_id (and optional data, video_base64, …)",
-        "load": "GET /config/{config_id} — example: /config/FVTH-A1B2C",
+        "save": "POST /config — JSON { config_id, data: { …, video_base64? } } (deploy preview video)",
+        "load": "GET /config/{config_id} — JSON + video_url / image_url when files exist",
         "why_method_not_allowed": "Opening /config in the address bar sends GET; saving requires POST from your app.",
     }
 
@@ -328,6 +327,17 @@ def get_config(config_id: str, request: Request):
     base = str(request.base_url).rstrip("/")
     if base.startswith("http://"):
         base = base.replace("http://", "https://", 1)
+
+    # Unwrap older nested { config_id, image_url, data } files into flat response
+    if isinstance(data.get("data"), dict):
+        outer = dict(data)
+        inner = dict(outer.pop("data", {}))
+        inner["config_id"] = outer.get("config_id", cid)
+        if outer.get("image_url") is not None:
+            inner["image_url"] = outer.get("image_url")
+        data = inner
+
+    data.pop("preview_url", None)
 
     vpath, _ = _find_preview_video(cid)
     if vpath:
